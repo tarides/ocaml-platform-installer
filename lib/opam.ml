@@ -36,7 +36,7 @@ let make_switch ~yes switch () =
     match switch with
     | Local dir ->
         Cmd.(v "opam" % "switch" % "create" % dir % "--deps-only" % "with-test")
-    | Global comp -> Cmd.(v "opam" % "switch" % "create" % comp)
+    | Global compiler -> Cmd.(v "opam" % "switch" % "create" % compiler)
   in
   let cmd = add_yes ~yes base_cmd in
   OS.Cmd.run_io cmd OS.Cmd.in_stdin |> OS.Cmd.to_stdout

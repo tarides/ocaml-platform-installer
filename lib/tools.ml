@@ -1,8 +1,8 @@
 open! Import
 open Bos_setup
 
-let comp_independent = [ "dune"; "utop"; "dune-release" ]
-let comp_dependent = [ "merlin"; "ocaml-lsp-server"; "odoc"; "ocamlformat" ]
+let compiler_independent = [ "dune"; "utop"; "dune-release" ]
+let compiler_dependent = [ "merlin"; "ocaml-lsp-server"; "odoc"; "ocamlformat" ]
 
 type t = {
   name : string;
@@ -39,9 +39,9 @@ let platform =
   let independent =
     List.map
       (fun tool -> { name = tool; compiler_constr = None; description = None })
-      comp_independent
+      compiler_independent
   in
   List.fold_left
     (fun acc tool ->
       { name = tool; compiler_constr = None; description = None } :: acc)
-    independent comp_dependent
+    independent compiler_dependent

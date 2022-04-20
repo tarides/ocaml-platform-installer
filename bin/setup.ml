@@ -35,7 +35,7 @@ let global_setup yes = function
   | None ->
       (* FIXME: this should be the latest stable compiler, not a hard-coded 4.14.0 *)
       do_all ~yes (Global "4.14.0")
-  | Some comp -> do_all ~yes (Global comp)
+  | Some compiler -> do_all ~yes (Global compiler)
 
 let local_arg =
   let doc =
@@ -49,7 +49,10 @@ let global_arg =
     "The compiler you'd like to have in your global switch. Defaults to the \
      latest stable compiler."
   in
-  Arg.(value & opt (some' string) None & info [ "c"; "comp" ] ~docv:"COMP" ~doc)
+  Arg.(
+    value
+    & opt (some' string) None
+    & info [ "c"; "compiler" ] ~docv:"COMPILER" ~doc)
 
 let yes =
   let doc = "Just keep going without stopping to prompt for confirmation" in
