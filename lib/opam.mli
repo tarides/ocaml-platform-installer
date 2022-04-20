@@ -1,10 +1,10 @@
-val install : yes:bool -> unit -> (unit, [> Rresult.R.msg ]) result
+val install : yes:bool -> unit -> (unit, [> `Msg of string ]) result
 (** Installs opam (currently by executing the opam shell script)*)
 
 val is_installed : unit -> bool
 (** Checks if opam is already installed or not.*)
 
-val init : yes:bool -> unit -> (unit, [> Rresult.R.msg ]) result
+val init : yes:bool -> unit -> (unit, [> `Msg of string ]) result
 (** Initializes opam without setting up a switch *)
 
 val is_initialized : unit -> bool
@@ -14,7 +14,7 @@ type switch = Local of string | Global of string
 (* FIXME: use Fpath.t for the parameter of [Local] and something like ... for the parameter of [Global]. *)
 
 val make_switch :
-  yes:bool -> switch -> unit -> (unit, [> Rresult.R.msg ]) result
+  yes:bool -> switch -> unit -> (unit, [> `Msg of string ]) result
 (** [make_switch switch] creates a switch [switch]. If the switch is local, it
     also installs the project dependencies, including test dependencies. *)
 

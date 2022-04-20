@@ -31,6 +31,4 @@
   dune
   (cmdliner
    (>= 1.1.0))
-  bos
-  result
-  rresult))
+  bos))
