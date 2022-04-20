@@ -2,7 +2,7 @@
 set -euo pipefail
 
 docker build -t test .
-docker run -i -v $(pwd)/_build/default/bin/main.exe:/usr/local/bin/ocaml-platform --privileged test <<EOF
+docker run -i --privileged test <<EOF
 printf "\n" | ocaml-platform setup-global --yes
 eval \$(opam env)
 opam --version
