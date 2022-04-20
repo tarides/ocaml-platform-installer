@@ -11,7 +11,7 @@ val is_initialized : unit -> bool
 (** Checks if opam is already initialized or not.*)
 
 type switch = Local of string | Global of string
-(* FIXME: use Fpath.t for the parameter of [Local] and something like ... for the parameter of [Global. *)
+(* FIXME: use Fpath.t for the parameter of [Local] and something like ... for the parameter of [Global]. *)
 
 val make_switch :
   yes:bool -> switch -> unit -> (unit, [> Rresult.R.msg ]) result
