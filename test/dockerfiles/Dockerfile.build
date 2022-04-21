@@ -1,0 +1,12 @@
+FROM ocaml/opam:alpine-ocaml-4.14
+
+COPY --chown=opam *.opam ocaml-platform/
+
+WORKDIR ocaml-platform/
+
+RUN opam install -y --deps-only --with-test --with-doc .
+
+COPY --chown=opam dune* .
+COPY --chown=opam src src
+
+RUN opam exec -- dune build
