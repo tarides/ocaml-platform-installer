@@ -1,0 +1,127 @@
+name: Build
+on: [push]
+jobs:
+  linux-build:
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+        include:
+          - platform: linux/amd64
+            artifact_suffix: linux-amd64
+          - platform: linux/arm64
+            artifact_suffix: linux-arm64
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          driver: docker
+
+      - name: Build
+        run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform }} ; export OCAMLPLATFORM_PLATFORM ;./test/run_test.sh
+        env:
+          OCAMLPLATFORM_PLATFORM: ${{ matrix.platform }}
+
+      - name: Check images
+        run:  docker image ls
+
+      - name: Test install
+        run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh install
+
+      - name: Test version
+        run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh version
+
+      - name: Get executables from docker image
+        run:  mkdir -p release ; chmod a+rw release ; docker run --platform ${{ matrix.platform }} -v $PWD/release:/release ocaml-platform-build-${{ matrix.platform }} cp /home/opam/ocaml-platform/_build/default/src/bin/main.exe /release/ocaml-platform-${{ matrix.artifact_suffix }}.exe
+
+      - name: upload linux artifacts
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: release/ocaml-platform-*.exe
+
+  mac-build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download opam
+        run: bash macos/install.sh
+
+      - name: Opam init
+        run: opam init --auto-setup
+
+      - name: Install dependencies
+        run: opam install --deps-only --with-test --with-doc -y .
+
+      - name: build
+        run:  opam exec -- dune build
+
+      - name: cp file
+        run: cp _build/default/src/bin/main.exe ocaml-platform-macos.exe
+
+      - name: upload mac artifacts
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: ocaml-platform-macos.exe
+
+
+  mac-test:
+    needs: [mac-build]
+    runs-on: macos-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries
+
+      - name: Copy binary to path
+        run: cp ocaml-platform-macos.exe /usr/local/bin
+
+      - name: Test install
+        run: bash test/tests/install.sh
+
+      - name: Test version
+        run: bash test/tests/version.sh
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [linux-build, mac-build, mac-test]
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: binaries
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ocaml-platform-macos-x86_64.exe
+            ocaml-platform-x86_64.exe
+            ocaml-platform-arm64.exe
+

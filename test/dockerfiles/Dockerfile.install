@@ -1,0 +1,15 @@
+ARG TARGETPLATFORM=$TARGETPLATFORM
+
+FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
+
+FROM ubuntu:20.04
+
+RUN apt update
+
+RUN apt install -y gcc make patch unzip bubblewrap curl
+
+COPY --from=base /home/opam/ocaml-platform/_build/default/src/bin/main.exe /usr/local/bin/ocaml-platform
+
+COPY test/tests/install.sh .
+
+RUN bash install.sh
