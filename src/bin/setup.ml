@@ -2,13 +2,12 @@ open! Platform.Import
 open Cmdliner
 open Result.Direct
 
-let exec ~skip ~err f =
-  if skip then Ok ()
-  else
-    f ()
-    |> Result.map_error (fun (`Msg msg) ->
-           Platform.UserInteractions.errorf "%s" msg;
-           err)
+let handle_err ~err =
+  Result.map_error (fun (`Msg msg) ->
+      Platform.UserInteractions.errorf "%s" msg;
+      err)
+
+let exec ~skip ~err f = if skip then Ok () else handle_err ~err (f ())
 
 let handle_errs =
   Result.map_error (fun l ->
@@ -18,7 +17,8 @@ let handle_errs =
 let do_all ~yes switch =
   let setup_res =
     let open Platform.Opam in
-    let* () = exec ~skip:(is_installed ()) ~err:30 (install ~yes) in
+    let* skip_install = is_installed () |> handle_err ~err:1 in
+    let* () = exec ~skip:skip_install ~err:30 (install ~yes) in
     let* () = exec ~skip:(is_initialized ()) ~err:31 (init ~yes) in
     let* () =
       exec ~skip:(switch_exists switch) ~err:32 (make_switch ~yes switch)

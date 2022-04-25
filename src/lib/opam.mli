@@ -1,8 +1,9 @@
 val install : yes:bool -> unit -> (unit, [> `Msg of string ]) result
-(** Installs opam (currently by executing the opam shell script)*)
+(** Installs opam (currently by executing the opam shell script). Returns an
+    error if Opam is already installed. *)
 
-val is_installed : unit -> bool
-(** Checks if opam is already installed or not.*)
+val is_installed : unit -> (bool, [> `Msg of string ]) result
+(** Checks if opam is already installed or not. *)
 
 val init : yes:bool -> unit -> (unit, [> `Msg of string ]) result
 (** Initializes opam without setting up a switch *)
