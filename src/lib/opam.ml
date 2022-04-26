@@ -1,9 +1,11 @@
 open! Import
 open Bos_setup
 
+type opam_options = { yes : bool; root : Fpath.t }
+
 let is_installed () = OS.Cmd.exists (Cmd.v "opam")
 
-let install ~yes:_ () =
+let install () =
   let open Result.Direct in
   let* installed = is_installed () in
   if installed then Error (`Msg "Already installed")
@@ -19,31 +21,30 @@ let install ~yes:_ () =
     if exit = 0 then Ok ()
     else Error (`Msg "Something went wrong trying to install opam.")
 
-let add_yes ~yes cmd = if yes then Cmd.(cmd % "--yes") else cmd
+let opam_cmd { yes; root } cmd =
+  let open Cmd in
+  v "opam" % cmd %% (if yes then v "--yes" else empty) % "--root" % p root
 
-let init ~yes () =
-  (* FIXME: implement this in OCaml instead of running the opam script and adapt it to our ideas. In particular, take [yes] into account instead of ignoring it :P *)
-  let base_cmd = Cmd.(v "opam" % "init" % "--bare") in
-  let cmd = add_yes ~yes base_cmd in
+let init opts () =
+  let cmd = Cmd.(opam_cmd opts "init" % "--bare") in
   OS.Cmd.run_io cmd OS.Cmd.in_stdin |> OS.Cmd.to_stdout
 
-let is_initialized () =
+let is_initialized _ =
   (* FIXME *)
   false
 
 type switch = Local of string | Global of string
 (* FIXME: use Fpath.t for the parameter of [Local] and something like ... for the parameter of [Global] *)
 
-let make_switch ~yes switch () =
-  let base_cmd =
+let make_switch opts switch () =
+  let cmd =
     match switch with
     | Local dir ->
-        Cmd.(v "opam" % "switch" % "create" % dir % "--deps-only" % "with-test")
-    | Global compiler -> Cmd.(v "opam" % "switch" % "create" % compiler)
+        Cmd.(opam_cmd opts "switch" % "create" % dir % "--deps-only" % "with-test")
+    | Global compiler -> Cmd.(opam_cmd opts "switch" % "create" % compiler)
   in
-  let cmd = add_yes ~yes base_cmd in
   OS.Cmd.run_io cmd OS.Cmd.in_stdin |> OS.Cmd.to_stdout
 
-let switch_exists _switch =
+let switch_exists _opts _switch =
   (* FIXME *)
   false

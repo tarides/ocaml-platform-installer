@@ -5,7 +5,8 @@ type t = {
 }
 (* FIXME: Once we use the opam library, let's use something like [OpamPackage.Name.t] for the type of [name] and something like ... for the type of [compiler_constr].*)
 
-val install : yes:bool -> t list -> (unit, [> `Msg of string ] list) result
+val install :
+  Opam.opam_options -> t list -> (unit, [> `Msg of string ] list) result
 (** [install tools] installs each tool in [tools] inside the current switch, if
     it isn't already installed*)
 

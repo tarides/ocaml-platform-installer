@@ -11,20 +11,18 @@ type t = {
 }
 (* FIXME: Once we use the opam library, let's use something like [OpamPackage.Name.t] for the type of [name] and something like ... for the type of [compiler_constr].*)
 
-let install_one ~yes { name; compiler_constr = _; description } =
+let install_one opam_opts { name; compiler_constr = _; description } =
   (* TODO: check first if the tool is already installed before installing it *)
   let descr = Option.value ~default:"" description in
   UserInteractions.logf "We're currently installing %s. %s\n" name descr;
   (* FIXME: implement a caching and sandboxing workflow. for the sandboxing, take [compiler_constr] into account *)
-  let base_cmd = Cmd.(v "opam" % "install" % name) in
-  let cmd = if yes then Cmd.(base_cmd % "--yes") else base_cmd in
-  OS.Cmd.run_io cmd OS.Cmd.in_stdin |> OS.Cmd.to_stdout
+  OS.Cmd.run_io Cmd.(Opam.opam_cmd opam_opts "install" % name) OS.Cmd.in_stdin |> OS.Cmd.to_stdout
 
-let install ~yes tools =
+let install opam_opts tools =
   let iterate res tools =
     List.fold_left
       (fun last_res tool ->
-        match (last_res, install_one ~yes tool) with
+        match (last_res, install_one opam_opts tool) with
         | Ok (), Ok () -> Ok ()
         | Error l, Ok () -> Error l
         | Ok (), Error err -> Error [ err ]
