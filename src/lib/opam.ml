@@ -26,25 +26,9 @@ let opam_cmd { yes; root } cmd =
   v "opam" % cmd %% (if yes then v "--yes" else empty) % "--root" % p root
 
 let init opts () =
-  let cmd = Cmd.(opam_cmd opts "init" % "--bare") in
+  let cmd = opam_cmd opts "init" in
   OS.Cmd.run_io cmd OS.Cmd.in_stdin |> OS.Cmd.to_stdout
 
 let is_initialized _ =
-  (* FIXME *)
-  false
-
-type switch = Local of string | Global of string
-(* FIXME: use Fpath.t for the parameter of [Local] and something like ... for the parameter of [Global] *)
-
-let make_switch opts switch () =
-  let cmd =
-    match switch with
-    | Local dir ->
-        Cmd.(opam_cmd opts "switch" % "create" % dir % "--deps-only" % "with-test")
-    | Global compiler -> Cmd.(opam_cmd opts "switch" % "create" % compiler)
-  in
-  OS.Cmd.run_io cmd OS.Cmd.in_stdin |> OS.Cmd.to_stdout
-
-let switch_exists _opts _switch =
   (* FIXME *)
   false

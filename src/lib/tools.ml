@@ -16,7 +16,8 @@ let install_one opam_opts { name; compiler_constr = _; description } =
   let descr = Option.value ~default:"" description in
   UserInteractions.logf "We're currently installing %s. %s\n" name descr;
   (* FIXME: implement a caching and sandboxing workflow. for the sandboxing, take [compiler_constr] into account *)
-  OS.Cmd.run_io Cmd.(Opam.opam_cmd opam_opts "install" % name) OS.Cmd.in_stdin |> OS.Cmd.to_stdout
+  OS.Cmd.run_io Cmd.(Opam.opam_cmd opam_opts "install" % name) OS.Cmd.in_stdin
+  |> OS.Cmd.to_stdout
 
 let install opam_opts tools =
   let iterate res tools =
