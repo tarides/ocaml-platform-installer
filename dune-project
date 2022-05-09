@@ -9,7 +9,7 @@
 
 (authors
  "Jules Aguillon"
- "Paul-Elliot Angl\195\168s d'Auriac"
+ "Paul-Elliot Anglès d'Auriac"
  "Sonja Heinze"
  "Thibaut Mattio")
 
