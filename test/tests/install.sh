@@ -1,6 +1,6 @@
 #/usr/bin/env bash
 set -euo pipefail
 
-printf "\n" | ocaml-platform setup-global --yes
+printf "\n" | ocaml-platform --yes
 
 eval $(opam env)
