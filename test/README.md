@@ -3,19 +3,19 @@
 To test `ocaml-platform`, from the root of the repo, run:
 
 ``` sh
-    bash test/run_test <list of requested tests>
+bash test/run_test <list of requested tests>
 ```
 
 For instance, to test installation followed by testing the output of `--version`:
 
 ``` sh
-    bash test/run_test install version
+bash test/run_test install version
 ```
 
 Note that `install` takes quite a long time, as it sets up a switch. If you want to test a new `ocaml-platform` binary (for instance the output of `--version`), starting from the end of the installation test, you can do so by running the `version` test without running the `install` test.
 
 ``` sh
-    bash test/run_test install version
+bash test/run_test install version
 ```
 
 In this case, the `version` test will run on the new binary, from the end of the `install` test _done with the old binary_. Thus, you should only do this if you are sure that your modifications do not impact the `install` test.
