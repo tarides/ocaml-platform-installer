@@ -49,7 +49,6 @@ jobs:
         run:  mkdir -p release ; chmod a+rw release ; docker run --platform ${{ matrix.platform }} -v $PWD/release:/release ocaml-platform-build-${{ matrix.platform }} cp /home/opam/ocaml-platform/_build/default/src/bin/main.exe /release/ocaml-platform-${{ matrix.artifact_suffix }}.exe
 
       - name: upload linux artifacts
-        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v3
         with:
           name: binaries
@@ -77,7 +76,6 @@ jobs:
         run: cp _build/default/src/bin/main.exe ocaml-platform-macos.exe
 
       - name: upload mac artifacts
-        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v3
         with:
           name: binaries
@@ -98,7 +96,7 @@ jobs:
           name: binaries
 
       - name: Copy binary to path
-        run: cp ocaml-platform-macos.exe /usr/local/bin
+        run: cp ocaml-platform-macos.exe /usr/local/bin/ocaml-platform; chmod a+x /usr/local/bin/ocaml-platform
 
       - name: Test install
         run: bash test/tests/install.sh
@@ -121,7 +119,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ocaml-platform-macos-x86_64.exe
+            ocaml-platform-macos.exe
             ocaml-platform-x86_64.exe
             ocaml-platform-arm64.exe
 
