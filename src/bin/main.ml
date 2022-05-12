@@ -1,10 +1,10 @@
 open! Platform.Import
 open Cmdliner
-open Result.Direct
 
 (** A Cmdliner conversion for a path. The path doesn't need to exist on the
     system. *)
 let conv_path = Arg.conv ~docv:"PATH" Fpath.(of_string, pp)
+open Result.Monad
 
 let handle_err ~err =
   Result.map_error (fun (`Msg msg) ->
