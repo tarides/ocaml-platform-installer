@@ -1,5 +1,12 @@
-name: Build
-on: [push, pull_request]
+   
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
   linux-build:
     strategy:
@@ -55,16 +62,27 @@ jobs:
           path: release/ocaml-platform-*.exe
 
   mac-build:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os:
+          - macos-latest
+
+        ocaml-compiler:
+          - 4.14.x
+
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Download opam
-        run: bash macos/install.sh
-
-      - name: Opam init
-        run: opam init --auto-setup
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: ${{ matrix.os != 'macos-latest' }}
 
       - name: Install dependencies
         run: opam install --deps-only --with-test --with-doc -y .
