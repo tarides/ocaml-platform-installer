@@ -9,10 +9,10 @@ let handle_err ~err =
 
 let exec ~skip ~err f = if skip then Ok () else handle_err ~err (f ())
 
-let handle_errs =
+let handle_errs ~err =
   Result.map_error (fun l ->
       List.iter (fun (`Msg msg) -> Platform.UserInteractions.errorf "%s" msg) l;
-      List.length l)
+      err)
 
 let install_platform opam_opts =
   let install_res =
@@ -20,7 +20,7 @@ let install_platform opam_opts =
     let* skip_install = is_installed () |> handle_err ~err:1 in
     let* () = exec ~skip:skip_install ~err:30 install in
     let* () = exec ~skip:(is_initialized opam_opts) ~err:31 (init opam_opts) in
-    Platform.Tools.(install opam_opts platform) |> handle_errs
+    Platform.Tools.(install opam_opts platform) |> handle_errs ~err:32
   in
   match install_res with Ok () -> 0 | Error st -> st
 
