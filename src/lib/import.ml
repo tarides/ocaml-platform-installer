@@ -1,5 +1,5 @@
 module Result = struct
-  include Result
+  include Stdlib.Result
 
   module Syntax = struct
     let ( let+ ) x f = Result.map f x

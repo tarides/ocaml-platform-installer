@@ -1,6 +1,3 @@
-open! Import
-open Bos_setup
-
 let compiler_independent = [ "dune"; "utop"; "dune-release" ]
 let compiler_dependent = [ "merlin"; "ocaml-lsp-server"; "odoc"; "ocamlformat" ]
 
@@ -15,12 +12,12 @@ type t = {
 
 let install_one opam_opts { name; compiler_constr = _; description } =
   (* TODO: check first if the tool is already installed before installing it *)
-  let descr = Option.value ~default:"" description in
-  User_interactions.logf "We're currently installing %s. %s\n" name descr;
+  let descr = Option.default "" description in
+  Printf.printf "We're currently installing %s. %s\n" name descr;
   (* FIXME: implement a caching and sandboxing workflow. for the sandboxing,
      take [compiler_constr] into account *)
-  OS.Cmd.run_io Cmd.(Opam.opam_cmd opam_opts "install" % name) OS.Cmd.in_stdin
-  |> OS.Cmd.to_stdout
+  Opam.Switch.install ~opts:opam_opts
+    [ `Atom (OpamFormula.atom_of_string name) ]
 
 let install opam_opts tools =
   let iterate res tools =

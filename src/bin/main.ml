@@ -1,14 +1,10 @@
-open! Platform.Import
 open Cmdliner
 
 let cmds = [ Opam.t ]
 
 let install_platform opam_opts =
   let install_res =
-    let open Platform.Opam in
-    let open Result.Syntax in
-    let* () = install () in
-    let* () = init opam_opts in
+    let _ = Platform.Opam.check_init ~opts:opam_opts () in
     match Platform.Tools.(install opam_opts platform) with
     | Ok () -> Ok ()
     | Error errs ->
@@ -18,18 +14,19 @@ let install_platform opam_opts =
   match install_res with
   | Ok () -> 0
   | Error (`Msg msg) ->
-      Platform.User_interactions.errorf "%s" msg;
+      Printf.eprintf "%s" msg;
       1
 
 let main () =
   let term =
-    let yes = true
-    and root =
-      Bos.OS.Env.var "OPAMROOT" |> Option.map Fpath.v
-      |> Option.default
-           Fpath.(v (Bos.OS.Env.opt_var "HOME" ~absent:".") / ".opam")
+    let opt_root =
+      Bos.OS.Env.var "OPAMROOT" |> Option.map OpamFilename.Dir.of_string
     in
-    Term.(const install_platform $ const { Platform.Opam.yes; root })
+    let opts =
+      let default = Platform.Opam.Global.default () in
+      { default with yes = Some true; opt_root }
+    in
+    Term.(const install_platform $ const opts)
   in
   let info =
     let doc = "Install all OCaml Platform tools in your current switch." in
