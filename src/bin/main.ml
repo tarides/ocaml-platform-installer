@@ -4,14 +4,14 @@ open Result.Monad
 
 let handle_err ~err =
   Result.map_error (fun (`Msg msg) ->
-      Platform.UserInteractions.errorf "%s" msg;
+      Platform.User_interactions.errorf "%s" msg;
       err)
 
 let exec ~skip ~err f = if skip then Ok () else handle_err ~err (f ())
 
 let handle_errs ~err =
   Result.map_error (fun l ->
-      List.iter (fun (`Msg msg) -> Platform.UserInteractions.errorf "%s" msg) l;
+      List.iter (fun (`Msg msg) -> Platform.User_interactions.errorf "%s" msg) l;
       err)
 
 let install_platform opam_opts =

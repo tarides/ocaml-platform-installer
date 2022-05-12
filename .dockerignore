@@ -1,1 +1,5 @@
-_opam
+*
+!src/
+!dune
+!dune-project
+!platform.opam
