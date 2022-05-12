@@ -1,18 +1,12 @@
-(* -*- tuareg -*- *)
+(rule
+ (with-stdout-to
+  static_linking_flags
+  (run ocaml %{dep:config/static_linking_flags.ml} %{ocaml-config:target})))
 
-open Jbuild_plugin.V1
-
-let flags =
-  match List.assoc "target" ocamlc_config with
-  | "aarch64-unknown-linux-musl"
-  | "x86_64-pc-linux-musl" -> "(:standard -cclib -static -cclib -no-pie)"
-  | _ -> "(:standard)"
-
-let () =
-  Printf.ksprintf send {|
 (executable
  (name main)
  (public_name platform)
- (flags %s)
+ (flags
+  (:standard
+   (:include static_linking_flags)))
  (libraries platform cmdliner))
-|} flags
