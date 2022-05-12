@@ -30,7 +30,7 @@ The script for a new test named `new-test` must be in `test/tests/new-test.sh`.
 
 In order to fail whenever a command fails, it must start with:
 ``` shell
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 ```
 
