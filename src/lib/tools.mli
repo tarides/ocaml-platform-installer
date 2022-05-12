@@ -1,7 +1,6 @@
 type tool
 
-val install :
-  Opam.Global.t -> tool list -> (unit, [> `Msg of string ] list) result
+val install : Opam.Global.t -> tool list -> (unit, [> Bos_setup.R.msg ]) result
 (** [install tools] installs each tool in [tools] inside the current switch, if
     it isn't already installed *)
 

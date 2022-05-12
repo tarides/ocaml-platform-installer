@@ -9,10 +9,6 @@ val has_binary_package : Repo.t -> name -> bool
 (** Whether the repository already contain the binary version of a package. *)
 
 val make_binary_package :
-  Sandbox_switch.t ->
-  Repo.t ->
-  name ->
-  original_name:string * string option ->
-  (unit, 'e) OS.result
+  Sandbox_switch.t -> Repo.t -> name -> tool_name:string -> (unit, 'e) OS.result
 (** Make a binary package from the result of installing a package in the sandbox
     switch. *)

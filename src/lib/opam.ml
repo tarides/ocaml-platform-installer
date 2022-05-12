@@ -1,5 +1,6 @@
 open Stdlib
 open Import
+open Bos
 
 module Global = struct
   type t = OpamArg.global_options = {
@@ -221,3 +222,37 @@ module Switch = struct
     OpamSwitchState.drop @@ OpamClient.upgrade st ~all:false atoms;
     Ok ()
 end
+
+let opam_cmd cmd =
+  let open Cmd in
+  v "opam" %% cmd % "--yes" % "--color=never"
+
+let opam_run_s cmd =
+  let cmd = opam_cmd cmd in
+  match OS.Cmd.(run_out cmd |> out_string) with
+  | Ok (s, (_, `Exited 0)) -> Ok s
+  | Ok (_, (run_info, `Exited i)) ->
+      Error
+        (`Msg
+          (Printf.sprintf "Command %s returned with error code %d"
+             (Cmd.to_string @@ OS.Cmd.run_info_cmd run_info)
+             i))
+      (* TODO: Log output *)
+  | Ok (_, (run_info, `Signaled i)) ->
+      Error
+        (`Msg
+          (Printf.sprintf "Command %s signalled %d"
+             (Cmd.to_string @@ OS.Cmd.run_info_cmd run_info)
+             i))
+      (* TODO: Log output *)
+  | Error e -> Error e
+
+let opam_run_l cmd =
+  let open Result.Syntax in
+  let+ out = opam_run_s cmd in
+  String.split_on_char '\n' out |> List.map String.trim
+
+let opam_run cmd =
+  let open Result.Syntax in
+  let+ _ = opam_run_s cmd in
+  ()

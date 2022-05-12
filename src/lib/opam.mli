@@ -1,3 +1,5 @@
+open Bos_setup
+
 module Global : sig
   type t = OpamArg.global_options = {
     debug_level : int option;
@@ -74,3 +76,19 @@ val install : unit -> (unit, [> `Msg of string ]) result
 
 val is_installed : unit -> (bool, [> `Msg of string ]) result
 (** Checks if opam is already installed or not. *)
+
+val opam_cmd : Cmd.t -> Cmd.t
+(** A [Bos.Cmd] for calling Opam, the second argument is the sub-command to
+    call. *)
+
+val opam_run_s : Cmd.t -> (string, [> R.msg ]) result
+(** A [Bos.Cmd] for calling Opam, the second argument is the sub-command to
+    call. *)
+
+val opam_run_l : Cmd.t -> (string list, [> R.msg ]) result
+(** A [Bos.Cmd] for calling Opam, the second argument is the sub-command to
+    call. *)
+
+val opam_run : Cmd.t -> (unit, [> R.msg ]) result
+(** A [Bos.Cmd] for calling Opam, the second argument is the sub-command to
+    call. *)

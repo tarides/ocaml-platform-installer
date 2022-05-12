@@ -7,5 +7,9 @@ module Result : sig
   module Syntax : sig
     val ( let+ ) : ('a, 'b) t -> ('a -> 'c) -> ('c, 'b) t
     val ( let* ) : ('a, 'b) t -> ('a -> ('c, 'b) t) -> ('c, 'b) t
+    val ( >>| ) : ('a, 'b) t -> ('a -> 'c) -> ('c, 'b) t
+    val ( >>= ) : ('a, 'b) t -> ('a -> ('c, 'b) t) -> ('c, 'b) t
   end
+
+  val iter_until : ('a -> (unit, 'b) result) -> 'a list -> (unit, 'b) result
 end

@@ -57,10 +57,10 @@ let init () =
   if initialized then Ok repo_path
   else
     init_repo repo_path >>= fun _ ->
-    Exec.run_opam
+    Opam.opam_run
       Cmd.(
-        v "repository" % "add" % "--dont-select" % "-k" % "local" % "-y"
-        % repo_name % p repo_path)
+        v "repository" % "add" % "--dont-select" % "-k" % "local" % repo_name
+        % p repo_path)
     >>= fun () -> Ok repo_path
 
 let repo_path_of_pkg t ~pkg ~ver =
@@ -79,11 +79,11 @@ let add_package t ~pkg ~ver opam =
     "%a"
     (opam ~opam_version ~pkg_name:pkg)
     ()
-  >>= fun () -> Exec.run_opam Cmd.(v "update" % "--no-auto-upgrade" % repo_name)
+  >>= fun () -> Opam.opam_run Cmd.(v "update" % "--no-auto-upgrade" % repo_name)
 
 let with_repo_enabled _ f =
   let unselect_repo () =
-    ignore (Exec.run_opam Cmd.(v "repository" % "remove" % repo_name))
+    ignore (Opam.opam_run Cmd.(v "repository" % "remove" % repo_name))
   in
-  Exec.run_opam Cmd.(v "repository" % "add" % repo_name % p repo_path)
+  Opam.opam_run Cmd.(v "repository" % "add" % repo_name % p repo_path)
   >>= fun () -> Fun.protect ~finally:unselect_repo f

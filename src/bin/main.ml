@@ -16,11 +16,7 @@ let install_platform opam_opts =
     let* () = Platform.Opam.install () in
     let _ = Platform.Opam.check_init ~opts:opam_opts () in
     let* () = Platform.Opam.Switch.install ~opts:opam_opts [] in
-    match Platform.Tools.(install opam_opts platform) with
-    | Ok () -> Ok ()
-    | Error errs ->
-        let err = List.map (fun (`Msg msg) -> msg) errs |> String.concat "\n" in
-        Error (`Msg err)
+    Platform.Tools.(install opam_opts platform)
   in
   match install_res with
   | Ok () -> 0

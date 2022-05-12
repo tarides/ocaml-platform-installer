@@ -1,5 +1,8 @@
-let compiler_independent = [ "dune"; "utop"; "dune-release" ]
-let compiler_dependent = [ "merlin"; "ocaml-lsp-server"; "odoc"; "ocamlformat" ]
+open! Import
+open Astring
+open Bos
+module OV = Ocaml_version
+open Result.Syntax
 
 type tool = { name : string }
 (* FIXME: Once we use the opam library, let's use something like
@@ -7,91 +10,146 @@ type tool = { name : string }
    type of [compiler_constr].*)
 
 let parse_pkg_name_ver s =
+  let open Astring in
   match String.cut ~sep:"." s with
   | Some (n, v) -> (n, Some v)
   | None -> (s, None)
 
+let parse_constraints s =
+  let open Angstrom in
+  let is_whitespace = function
+    | '\x20' | '\x0a' | '\x0d' | '\x09' -> true
+    | _ -> false
+  in
+  let whitespace = take_while is_whitespace in
+  let whitespaced p = whitespace *> p <* whitespace in
+  let quoted p = whitespaced @@ (char '"' *> p) <* char '"' in
+  let bracketed p = whitespaced @@ (char '{' *> p) <* char '}' in
+  let quoted_ocaml = quoted @@ string "ocaml" in
+  let quoted_version =
+    quoted @@ take_till (( = ) '"') >>| fun version_string ->
+    OV.of_string_exn version_string
+  in
+  let is_comparator = function '<' | '>' | '=' -> true | _ -> false in
+  let comparator =
+    whitespaced @@ peek_char >>= function
+    | Some c ->
+        if is_comparator c then
+          take_till is_whitespace >>= function
+          | ("<" | "<=" | ">" | ">=" | "=") as e -> return (Some e)
+          | _ -> fail "not a comparator"
+        else return None
+    | None -> return None
+  in
+  let constraint_ = both comparator quoted_version in
+  let constraints = sep_by (whitespaced @@ char '&') constraint_ in
+  let finally = quoted_ocaml *> bracketed constraints <* end_of_input in
+  match parse_string ~consume:Consume.All finally s with
+  | Ok a -> Ok a
+  | Error m -> Error (`Msg m)
+
+let verify_constraint version constraint_ =
+  match constraint_ with
+  | Some "<=", constraint_version -> OV.compare version constraint_version < 1
+  | Some "<", constraint_version -> OV.compare version constraint_version < 0
+  | Some ">=", constraint_version -> OV.compare version constraint_version > -1
+  | Some ">", constraint_version -> OV.compare version constraint_version > 0
+  | _ -> failwith "impossible"
+
+let verify_constraints version constraints =
+  List.for_all (verify_constraint version) constraints
+
+let find_ocamlformat_version () =
+  match OS.File.read_lines (Fpath.v ".ocamlformat") with
+  | Ok f ->
+      List.filter_map (Astring.String.cut ~sep:"=") f
+      |> List.assoc_opt "version"
+  | Error (`Msg _) -> None
+
+let best_available_version sandbox name =
+  let+ versions =
+    Opam.opam_run_s Cmd.(v "show" % "-f" % "available-versions" % name)
+  in
+  let version =
+    String.cuts ~sep:"  " versions
+    |> List.rev
+    |> List.find (fun version ->
+           let ocaml_depends =
+             Opam.opam_run_l
+               Cmd.(v "show" % "-f" % "depends:" % (name ^ "." ^ version))
+             >>| List.find_opt (String.is_prefix ~affix:"\"ocaml\"")
+           in
+           match ocaml_depends with
+           | Ok (Some ocaml_constraint) ->
+               let result =
+                 parse_constraints ocaml_constraint >>| fun constraints ->
+                 verify_constraints
+                   (Sandbox_switch.ocaml_version sandbox)
+                   constraints
+               in
+               Result.value ~default:false result
+           | Ok None -> true
+           | _ -> false)
+  in
+  version
+
 let binary_name_of_tool sandbox tool =
   let name, ver = parse_pkg_name_ver tool in
-  (match ver with
-  | Some ver -> Ok ver
-  | None ->
-      Exec.run_opam_s Cmd.(v "show" % "-f" % "available-versions" % name)
-      >>| fun versions ->
-      let version =
-        String.cuts ~sep:"  " versions
-        |> List.rev
-        |> List.find (fun version ->
-               let ocaml_depends =
-                 Exec.run_opam_l
-                   Cmd.(v "show" % "-f" % "depends:" % (name ^ "." ^ version))
-                 >>| List.find_opt (String.is_prefix ~affix:"\"ocaml\"")
-               in
-               match ocaml_depends with
-               | Ok (Some ocaml_constraint) ->
-                   let result =
-                     parse_constraints ocaml_constraint >>= fun constraints ->
-                     OV.of_string @@ Sandbox_switch.ocaml_version sandbox
-                     >>| fun sandbox_version ->
-                     verify_constraints sandbox_version constraints
-                   in
-                   Result.value ~default:false result
-               | Ok None -> true
-               | _ -> false)
-      in
-      version)
+  (match (name, ver) with
+  | _, Some ver -> Ok ver
+  | "ocamlformat", None -> (
+      match find_ocamlformat_version () with
+      | Some v -> Ok v
+      | None -> best_available_version sandbox tool)
+  | _, None -> best_available_version sandbox tool)
   >>| fun ver -> Binary_package.binary_name sandbox ~name ~ver
 
-let make_binary_package sandbox repo bname tool =
+let make_binary_package sandbox repo bname tool tool_name =
   if Binary_package.has_binary_package repo bname then Ok ()
   else
     Sandbox_switch.install sandbox ~pkgs:[ tool.name ] >>= fun () ->
-    Binary_package.make_binary_package sandbox repo bname ~original_name
+    Binary_package.make_binary_package sandbox repo bname ~tool_name
 
 let install_binary_tool sandbox repo tool =
+  let name, _ = parse_pkg_name_ver tool.name in
   binary_name_of_tool sandbox tool.name >>= fun bname ->
-  make_binary_package sandbox repo bname tool >>= fun () ->
+  make_binary_package sandbox repo bname tool name >>= fun () ->
   Repo.with_repo_enabled repo (fun () ->
-      Exec.run_opam
-        Cmd.(v "install" % "-y" % Binary_package.name_to_string bname))
+      Opam.opam_run
+        Cmd.(v "install" % Binary_package.name_to_string bname))
 
-let install opam_opts ~ocaml_version tools =
+let install _ tools =
+  Opam.opam_run_s Cmd.(v "show" % "ocaml" % "-f" % "version" % "--normalise")
+  >>= fun ovraw ->
+  OV.of_string ovraw >>= fun ocaml_version ->
   Repo.init () >>= fun repo ->
   Sandbox_switch.init ~ocaml_version >>= fun sandbox ->
-  Exec.iter (install_binary_tool sandbox repo) tools
-
-let install_one opam_opts { name; compiler_constr = _; description } =
-  (* TODO: check first if the tool is already installed before installing it *)
-  let descr = Option.default "" description in
-  Printf.printf "We're currently installing %s. %s\n" name descr;
-  (* FIXME: implement a caching and sandboxing workflow. for the sandboxing,
-     take [compiler_constr] into account *)
-  Opam.Switch.install ~opts:opam_opts
-    [ `Atom (OpamFormula.atom_of_string name) ]
-
-let install opam_opts tools =
   let iterate res tools =
     List.fold_left
       (fun last_res tool ->
-        match (last_res, install_one opam_opts tool) with
+        match (last_res, install_binary_tool sandbox repo tool) with
         | Ok (), Ok () -> Ok ()
         | Error l, Ok () -> Error l
         | Ok (), Error err -> Error [ err ]
         | Error l, Error err -> Error (err :: l))
       res tools
   in
-  iterate (Ok ()) tools
+  let res = iterate (Ok ()) tools in
+  match res with
+  | Ok e -> Ok e
+  | Error l ->
+      let l = List.map (function `Msg e -> e | _ -> failwith "TODO") l in
+      Error (`Msg (String.concat ~sep:"\n" l))
 
 (** TODO: This should be moved to an other module to for example do automatic
     recognizing of ocamlformat's version. *)
 let platform =
-  (* FIXME: should take an argument of type [OpamStateTypes.switch_state] from
-     the opam library or something like that and use that argument for the
-     [compiler_constr] field of the compiler dependent tools *)
-  (* FIXME: should add a brief description for each tool *)
-  let independent =
-    List.map (fun tool -> { name = tool }) compiler_independent
-  in
-  List.fold_left
-    (fun acc tool -> { name = tool } :: acc)
-    independent compiler_dependent
+  [
+    { name = "dune" };
+    { name = "utop" };
+    { name = "dune-release" };
+    { name = "merlin" };
+    { name = "ocaml-lsp-server" };
+    { name = "odoc" };
+    { name = "ocamlformat" };
+  ]
