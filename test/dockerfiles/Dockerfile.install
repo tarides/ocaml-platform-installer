@@ -6,7 +6,7 @@ FROM ubuntu:20.04
 
 RUN apt update
 
-RUN apt install -y gcc make patch unzip bubblewrap curl
+RUN apt install -y gcc make patch unzip bubblewrap curl rsync
 
 COPY --from=base /home/opam/ocaml-platform/_build/default/src/bin/main.exe /usr/local/bin/ocaml-platform
 

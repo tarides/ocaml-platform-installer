@@ -1,34 +1,37 @@
 open Bos
 open Rresult
+module OV = Ocaml_version
 
-type t = { ocaml_version : string; prefix : Fpath.t }
+type t = { ocaml_version : OV.t; prefix : Fpath.t }
 
-let switch_name ov = Fmt.str "opam-tools-%s" ov
+let switch_name ov = Fmt.str "opam-tools-%s" (OV.to_string ov)
 let ocaml_version t = t.ocaml_version
 
 let init ~ocaml_version =
-  Exec.run_opam_l Cmd.(v "switch" % "list" % "-s") >>= fun all_sw ->
+  Opam.opam_run_l Cmd.(v "switch" % "list" % "-s") >>= fun all_sw ->
   let sw = switch_name ocaml_version in
   (match List.exists (( = ) sw) all_sw with
   | true -> Ok ()
   | false ->
       Logs.info (fun l -> l "Creating switch %s to use for tools" sw);
-      Exec.run_opam
-        Cmd.(v "switch" % "create" % sw % ocaml_version % "--no-switch"))
-  >>= fun () ->
-  Exec.run_opam_s Cmd.(v "config" % "--switch" % sw % "var" % "prefix")
+      Opam.opam_run
+        Cmd.(
+          v "switch" % "create" % sw % OV.to_string ocaml_version
+          % "--no-switch"))
+  >>= fun _ ->
+  Opam.opam_run_s Cmd.(v "config" % "--switch" % sw % "var" % "prefix")
   >>| fun prefix -> { ocaml_version; prefix = Fpath.v @@ String.trim prefix }
 
 let a_switch t = Cmd.(v "--switch" % switch_name t.ocaml_version)
 
 let pin t ~pkg ~url =
-  Exec.run_opam Cmd.(v "pin" %% a_switch t % "add" % "-ny" % pkg % url)
+  Opam.opam_run Cmd.(v "pin" %% a_switch t % "add" % "-ny" % pkg % url)
 
 let install t ~pkgs =
-  Exec.run_opam Cmd.(v "install" %% a_switch t % "-y" %% of_list pkgs)
+  Opam.opam_run Cmd.(v "install" %% a_switch t % "-y" %% of_list pkgs)
 
 let list_files t ~pkg =
-  Exec.run_opam_l Cmd.(v "show" %% a_switch t % "--list-files" % pkg)
+  Opam.opam_run_l Cmd.(v "show" %% a_switch t % "--list-files" % pkg)
   >>| fun files -> List.map Fpath.v files
 
 let switch_path_prefix t = t.prefix
