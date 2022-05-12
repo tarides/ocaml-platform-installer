@@ -1,0 +1,25 @@
+(executable
+ (name main)
+ (libraries unix)
+ (modules main))
+
+(rule
+ (deps main.exe)
+ (targets asset.ml)
+ (action
+  (with-stdout-to
+   asset.ml
+   (echo "let t = [%embed \"main.exe\"]"))))
+
+(library
+ (name embed)
+ (kind ppx_rewriter)
+ (libraries ppxlib)
+ (modules embed_ppx))
+
+(library
+ (name bin_proxy)
+ (public_name platform.bin-proxy)
+ (libraries)
+ (modules asset bin_proxy)
+ (preprocess (pps embed)))
