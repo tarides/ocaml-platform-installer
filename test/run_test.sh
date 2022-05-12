@@ -1,4 +1,4 @@
-#/bin/bash
+#/usr/bin/env bash
 set -euo pipefail
 
 PLAT="${OCAMLPLATFORM_PLATFORM:-linux/amd64}"
