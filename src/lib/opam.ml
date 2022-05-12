@@ -6,7 +6,7 @@ type opam_options = { yes : bool; root : Fpath.t }
 let is_installed () = OS.Cmd.exists (Cmd.v "opam")
 
 let install () =
-  let open Result.Monad in
+  let open Result.Syntax in
   let* installed = is_installed () in
   if installed then Error (`Msg "Already installed")
   else

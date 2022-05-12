@@ -1,6 +1,5 @@
 open! Platform.Import
 open Cmdliner
-open Result.Monad
 
 let handle_err ~err =
   Result.map_error (fun (`Msg msg) ->
@@ -17,7 +16,7 @@ let handle_errs ~err =
 let install_platform opam_opts =
   let install_res =
     let open Platform.Opam in
-    let* skip_install = is_installed () |> handle_err ~err:1 in
+    let open Result.Syntax in
     let* () = exec ~skip:skip_install ~err:30 install in
     let* () = exec ~skip:(is_initialized opam_opts) ~err:31 (init opam_opts) in
     Platform.Tools.(install opam_opts platform) |> handle_errs ~err:32
