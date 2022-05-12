@@ -2,13 +2,12 @@ type opam_options = { yes : bool; root : Fpath.t }
 (** Opam options common to every commands. *)
 
 val install : unit -> (unit, [> `Msg of string ]) result
-(** Installs opam (currently by executing the opam shell script). Returns an
-    error if Opam is already installed. *)
+(** Installs opam (currently by executing the opam shell script). *)
 
 val is_installed : unit -> (bool, [> `Msg of string ]) result
 (** Checks if opam is already installed or not. *)
 
-val init : opam_options -> unit -> (unit, [> `Msg of string ]) result
+val init : opam_options -> (unit, [> `Msg of string ]) result
 (** Initializes opam without setting up a switch *)
 
 val is_initialized : opam_options -> bool

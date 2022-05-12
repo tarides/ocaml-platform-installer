@@ -10,7 +10,7 @@ type t = {
 val install :
   Opam.opam_options -> t list -> (unit, [> `Msg of string ] list) result
 (** [install tools] installs each tool in [tools] inside the current switch, if
-    it isn't already installed*)
+    it isn't already installed *)
 
 val platform : t list
 (** All tools in the current state of the OCaml Platform. (TODO: For the

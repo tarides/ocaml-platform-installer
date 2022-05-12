@@ -1,0 +1,10 @@
+pin-depends: [
+  ["opam-client.dev" "git+https://github.com/tmattio/opam#ocaml-platform"]
+  ["opam-core.dev" "git+https://github.com/tmattio/opam#ocaml-platform"]
+  ["opam-devel.dev" "git+https://github.com/tmattio/opam#ocaml-platform"]
+  ["opam-format.dev" "git+https://github.com/tmattio/opam#ocaml-platform"]
+  ["opam-installer.dev" "git+https://github.com/tmattio/opam#ocaml-platform"]
+  ["opam-repository.dev" "git+https://github.com/tmattio/opam#ocaml-platform"]
+  ["opam-solver.dev" "git+https://github.com/tmattio/opam#ocaml-platform"]
+  ["opam-state.dev" "git+https://github.com/tmattio/opam#ocaml-platform"]
+]

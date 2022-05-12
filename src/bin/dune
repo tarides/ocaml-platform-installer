@@ -9,4 +9,4 @@
  (flags
   (:standard
    (:include static_linking_flags)))
- (libraries platform cmdliner))
+ (libraries platform cmdliner opam-client))

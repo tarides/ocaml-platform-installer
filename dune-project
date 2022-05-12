@@ -11,13 +11,15 @@
  "Jules Aguillon"
  "Paul-Elliot Anglès d'Auriac"
  "Sonja Heinze"
- "Thibaut Mattio")
+ "Thibaut Mattio"
+ "Patrick Ferris")
 
 (maintainers
  "Jules Aguillon"
  "Paul-Elliot Anglès d'Auriac"
  "Sonja Heinze"
- "Thibaut Mattio")
+ "Thibaut Mattio"
+ "Patrick Ferris")
 
 (license ISC)
 
@@ -29,4 +31,9 @@
  (depends
   (cmdliner
    (>= 1.1.0))
-  bos))
+  base64
+  bos
+  (opam-core
+   (>= 2.1.0))
+  (opam-client
+   (>= 2.1.0))))
