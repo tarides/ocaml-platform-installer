@@ -1,9 +1,5 @@
 open! Platform.Import
 open Cmdliner
-
-(** A Cmdliner conversion for a path. The path doesn't need to exist on the
-    system. *)
-let conv_path = Arg.conv ~docv:"PATH" Fpath.(of_string, pp)
 open Result.Monad
 
 let handle_err ~err =
@@ -28,32 +24,16 @@ let install_platform opam_opts =
   in
   match install_res with Ok () -> 0 | Error st -> st
 
-(** Options that are taken by every commands and passed down to every opam
-    commands bundled together. *)
-let opam_options =
-  let open Term in
-  let yes =
-    let doc = "Just keep going without stopping to prompt for confirmation" in
-    Arg.(value & flag & info [ "y"; "yes" ] ~doc)
-  and root =
-    (* We need this value to determine whether opam is initialized, so we need
-       to handle Opam's env variable and a consistent default value. FIXME:
-       Using Opam's library will allow to reuse their cmdliner definitions. *)
-    let doc = "Location of Opam's root directory."
-    and env = Cmd.Env.info "OPAMROOT"
-    and absent = "\"\\$HOME/.opam\"" in
-    const (function
-      | Some r -> r
-      | None -> Fpath.(v (Bos.OS.Env.opt_var "HOME" ~absent:".") / ".opam"))
-    $ Arg.(
-        value
-        & opt (some conv_path) None
-        & info [ "opam-root" ] ~absent ~env ~doc)
-  in
-  const (fun yes root -> { Platform.Opam.yes; root }) $ yes $ root
-
 let cmd =
-  let term = Term.(const install_platform $ opam_options) in
+  let yes = true
+  and root =
+    Bos.OS.Env.var "OPAMROOT" |> Option.map Fpath.v
+    |> Option.value
+         ~default:Fpath.(v (Bos.OS.Env.opt_var "HOME" ~absent:".") / ".opam")
+  in
+  let term =
+    Term.(const install_platform $ const { Platform.Opam.yes; root })
+  in
   let info =
     let doc = "Install all OCaml Platform tools in your current switch." in
     Cmd.info "ocaml-platform" ~doc
