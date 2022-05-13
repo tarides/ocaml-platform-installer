@@ -25,4 +25,6 @@ module Result = struct
     match l with
     | hd :: tl -> fn hd >>= fun () -> iter_until fn tl
     | [] -> Ok ()
+
+  let errorf fmt = Format.kasprintf (fun msg -> Error (`Msg msg)) fmt
 end

@@ -224,36 +224,22 @@ end
 
 let opam_cmd cmd =
   let open Cmd in
-  v "opam" %% cmd % "--yes" % "--color=never"
+  v "opam" %% cmd % "--yes" % "-q" % "--color=never"
 
-let opam_run_s cmd =
+let opam_run_gen out_f cmd =
   let cmd = opam_cmd cmd in
-  match OS.Cmd.(run_out cmd |> out_string) with
-  | Ok (s, (_, `Exited 0)) -> Ok s
-  | Ok (_, (run_info, `Exited i)) ->
-      Error
-        (`Msg
-          (Printf.sprintf "Command %s returned with error code %d"
-             (Cmd.to_string @@ OS.Cmd.run_info_cmd run_info)
-             i))
-      (* TODO: Log output *)
-  | Ok (_, (run_info, `Signaled i)) ->
-      Error
-        (`Msg
-          (Printf.sprintf "Command %s signalled %d"
-             (Cmd.to_string @@ OS.Cmd.run_info_cmd run_info)
-             i))
-      (* TODO: Log output *)
-  | Error e -> Error e
+  Logs.debug (fun f -> f "Running command '%a'..." Cmd.pp cmd);
+  let* result, (_, status) = OS.Cmd.(run_out cmd |> out_f) in
+  Logs.debug (fun f ->
+      f "Running command '%a': %a" Cmd.pp cmd OS.Cmd.pp_status status);
+  match status with
+  | `Exited 0 -> Ok result
+  | _ ->
+      Result.errorf "Command '%a' failed: %a" Cmd.pp cmd OS.Cmd.pp_status status
 
-let opam_run_l cmd =
-  let open Astring in
-  let+ out = opam_run_s cmd in
-  String.cuts ~sep:"\n" out |> List.map String.trim
-
-let opam_run cmd =
-  let+ _ = opam_run_s cmd in
-  ()
+let opam_run_s cmd = opam_run_gen OS.Cmd.out_string cmd
+let opam_run_l cmd = opam_run_gen OS.Cmd.out_lines cmd
+let opam_run cmd = opam_run_gen OS.Cmd.out_null cmd
 
 let root =
   OS.Env.var "OPAMROOT" |> Option.map Fpath.v

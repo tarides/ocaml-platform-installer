@@ -11,7 +11,7 @@ module Common = struct
 end
 
 let rec log_error = function
-  | `Msg msg -> Printf.eprintf "%s" msg
+  | `Msg msg -> Logs.err (fun f -> f "%s" msg)
   | `Multi errs -> List.iter log_error errs
 
 let install_platform opam_opts =

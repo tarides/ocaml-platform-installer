@@ -115,8 +115,7 @@ let install_binary_tool sandbox repo tool =
   binary_name_of_tool sandbox tool.name >>= fun bname ->
   make_binary_package sandbox repo bname tool name >>= fun () ->
   Repo.with_repo_enabled (Binary_repo.repo repo) (fun () ->
-      Opam.opam_run
-        Cmd.(v "install" % Binary_package.name_to_string bname))
+      Opam.opam_run Cmd.(v "install" % Binary_package.name_to_string bname))
 
 let install _ tools =
   let binary_repo_path =
