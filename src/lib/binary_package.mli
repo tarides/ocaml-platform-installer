@@ -1,12 +1,8 @@
-open Import
+(** Make a binary package out of a package built in the {!Sandbox_switch}.
+    Package definitions and source archives are stored in {!Binary_repo}. *)
+
+open! Import
 open Bos
-
-module Binary_repo : sig
-  type t
-
-  val init : Fpath.t -> (t, 'e) Result.or_msg
-  val repo : t -> Repo.t
-end
 
 type t
 
