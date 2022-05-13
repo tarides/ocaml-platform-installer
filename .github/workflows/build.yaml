@@ -52,6 +52,12 @@ jobs:
       - name: Test version
         run: OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh version
 
+      - name: Test odoc
+        run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh small-project install-in-small-project odoc
+
+      - name: Test ocamlformat
+        run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh small-project install-in-small-project ocamlformat
+
       - name: Get executables from docker image
         run: mkdir -p release ; chmod a+rw release ; docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release ocaml-platform-build-${{ matrix.platform.name }} cp /home/opam/ocaml-platform/_build/default/src/bin/main.exe /release/ocaml-platform-${{ matrix.platform.filename_suffix }}.exe
 
@@ -117,9 +123,10 @@ jobs:
       - name: Test install
         run: bash test/tests/install.sh
 
-      - name: Test version
-        run: bash test/tests/version.sh
+      - name: Test suite
+        run: bash test/tests/small-project.sh ; bash test/tests/install-in-small-project.sh ; bash test/tests/odoc.sh ; bash test/tests/ocamlformat.sh ; 
 
+small-project install-in-small-project ocamlformat
   release:
     if: startsWith(github.ref, 'refs/tags/')
     needs: [linux-build, mac-build, mac-test]

@@ -59,17 +59,9 @@ let verify_constraint version constraint_ =
 let verify_constraints version constraints =
   List.for_all (verify_constraint version) constraints
 
-let find_ocamlformat_version () =
-  match OS.File.read_lines (Fpath.v ".ocamlformat") with
-  | Ok f ->
-      List.filter_map (Astring.String.cut ~sep:"=") f
-      |> List.assoc_opt "version"
-  | Error (`Msg _) -> None
-
 let best_available_version sandbox name =
-  let+ versions =
-    Opam.opam_run_s Cmd.(v "show" % "-f" % "available-versions" % name)
-  in
+  Opam.opam_run_s Cmd.(v "show" % "-f" % "available-versions" % name)
+  >>| fun versions ->
   let version =
     String.cuts ~sep:"  " versions
     |> List.rev
@@ -97,10 +89,6 @@ let binary_name_of_tool sandbox tool =
   let name, ver = parse_pkg_name_ver tool in
   (match (name, ver) with
   | _, Some ver -> Ok ver
-  | "ocamlformat", None -> (
-      match find_ocamlformat_version () with
-      | Some v -> Ok v
-      | None -> best_available_version sandbox tool)
   | _, None -> best_available_version sandbox tool)
   >>| fun ver -> Binary_package.binary_name sandbox ~name ~ver
 
