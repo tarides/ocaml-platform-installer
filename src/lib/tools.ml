@@ -114,7 +114,7 @@ let install_binary_tool sandbox repo tool =
   let name, _ = parse_pkg_name_ver tool.name in
   binary_name_of_tool sandbox tool.name >>= fun bname ->
   make_binary_package sandbox repo bname tool name >>= fun () ->
-  Repo.with_repo_enabled (Binary_package.Binary_repo.repo repo) (fun () ->
+  Repo.with_repo_enabled (Binary_repo.repo repo) (fun () ->
       Opam.opam_run
         Cmd.(v "install" % Binary_package.name_to_string bname))
 
@@ -125,7 +125,7 @@ let install _ tools =
   Opam.opam_run_s Cmd.(v "show" % "ocaml" % "-f" % "version" % "--normalise")
   >>= fun ovraw ->
   OV.of_string ovraw >>= fun ocaml_version ->
-  Binary_package.Binary_repo.init binary_repo_path >>= fun repo ->
+  Binary_repo.init binary_repo_path >>= fun repo ->
   Sandbox_switch.init ~ocaml_version >>= fun sandbox ->
   Result.fold_list
     (fun () tool -> install_binary_tool sandbox repo tool)

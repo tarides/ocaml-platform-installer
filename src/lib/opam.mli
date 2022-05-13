@@ -94,4 +94,3 @@ val opam_run : Cmd.t -> (unit, [> R.msg ]) result
     call. *)
 
 val root : Fpath.t
-(** TODO: Remove this. *)

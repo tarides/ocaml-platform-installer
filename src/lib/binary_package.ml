@@ -3,18 +3,6 @@ open Result.Syntax
 open Astring
 open Bos
 
-module Binary_repo = struct
-  type t = { repo : Repo.t; archive : Fpath.t }
-
-  let init base_path =
-    let repo_path = Fpath.( / ) base_path "repo" in
-    let+ repo = Repo.init ~name:"platform-cache" repo_path in
-    let archive = Fpath.( / ) base_path "archives" in
-    { repo; archive }
-
-  let repo t = t.repo
-end
-
 type t = { name : string; ver : string }
 
 (** Name and version of the binary package corresponding to a given package. *)
@@ -28,7 +16,7 @@ let binary_name sandbox ~name ~ver =
 let name_to_string { name; ver } = name ^ "." ^ ver
 
 let has_binary_package repo { name; ver } =
-  Repo.has_pkg repo.Binary_repo.repo ~pkg:name ~ver
+  Repo.has_pkg (Binary_repo.repo repo) ~pkg:name ~ver
 
 let generate_opam_file original_name archive_path ocaml_version =
   Repo.Opam_file.v
@@ -49,14 +37,13 @@ let process_path prefix path =
 let make_binary_package sandbox repo ({ name; ver } as bname) ~tool_name =
   let prefix = Sandbox_switch.switch_path_prefix sandbox in
   let archive_path =
-    Fpath.(repo.Binary_repo.archive / (name_to_string bname ^ ".tar.gz"))
+    Binary_repo.archive_path repo ~unique_name:(name_to_string bname ^ ".tar.gz")
   in
   Sandbox_switch.list_files sandbox ~pkg:tool_name >>= fun paths ->
   let paths =
     List.filter_map (process_path prefix) paths
     |> List.map Fpath.to_string |> String.concat ~sep:"\n"
   in
-  OS.Dir.create (Fpath.parent archive_path) >>= fun _ ->
   OS.Cmd.(
     in_string paths
     |> run_in
@@ -73,4 +60,4 @@ let make_binary_package sandbox repo ({ name; ver } as bname) ~tool_name =
       generate_opam_file tool_name archive_path
         (Sandbox_switch.ocaml_version sandbox)
     in
-    Repo.add_package repo.Binary_repo.repo ~pkg:name ~ver opam
+    Repo.add_package (Binary_repo.repo repo) ~pkg:name ~ver opam
