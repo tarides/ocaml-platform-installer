@@ -15,16 +15,19 @@ module Binary_repo = struct
   let repo t = t.repo
 end
 
-type name = string * string
+type t = { name : string; ver : string }
 
 (** Name and version of the binary package corresponding to a given package. *)
 let binary_name sandbox ~name ~ver =
   let ocaml_version = Sandbox_switch.ocaml_version sandbox in
-  (name ^ "+cached", ver ^ "-ocaml" ^ Ocaml_version.to_string ocaml_version)
+  {
+    name = name ^ "+cached";
+    ver = ver ^ "-ocaml" ^ Ocaml_version.to_string ocaml_version;
+  }
 
-let name_to_string (name, ver) = name ^ "." ^ ver
+let name_to_string { name; ver } = name ^ "." ^ ver
 
-let has_binary_package repo (name, ver) =
+let has_binary_package repo { name; ver } =
   Repo.has_pkg repo.Binary_repo.repo ~pkg:name ~ver
 
 let generate_opam_file original_name archive_path ocaml_version =
@@ -43,11 +46,10 @@ let process_path prefix path =
 
 (** Binary is already in the sandbox. Add this binary as a package in the local
     repo *)
-let make_binary_package sandbox repo ((pkg, ver) as bname) ~tool_name =
+let make_binary_package sandbox repo ({ name; ver } as bname) ~tool_name =
   let prefix = Sandbox_switch.switch_path_prefix sandbox in
-  (* TODO *)
   let archive_path =
-    Fpath.( / ) repo.Binary_repo.archive (name_to_string bname ^ ".tar.gz")
+    Fpath.(repo.Binary_repo.archive / (name_to_string bname ^ ".tar.gz"))
   in
   Sandbox_switch.list_files sandbox ~pkg:tool_name >>= fun paths ->
   let paths =
@@ -71,4 +73,4 @@ let make_binary_package sandbox repo ((pkg, ver) as bname) ~tool_name =
       generate_opam_file tool_name archive_path
         (Sandbox_switch.ocaml_version sandbox)
     in
-    Repo.add_package repo.Binary_repo.repo ~pkg ~ver opam
+    Repo.add_package repo.Binary_repo.repo ~pkg:name ~ver opam

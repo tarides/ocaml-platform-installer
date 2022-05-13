@@ -1,5 +1,6 @@
 open Stdlib
 open Import
+open Result.Syntax
 open Bos
 
 module Global = struct
@@ -74,7 +75,6 @@ end
 let is_installed () = Bos.OS.Cmd.exists (Bos.Cmd.v "opam")
 
 let install () =
-  let open Result.Syntax in
   let+ is_installed = is_installed () in
   if is_installed then
     Printf.printf "Opam is already installed, skipping installation.\n"
@@ -161,7 +161,6 @@ module Switch = struct
     Ok ()
 
   let remove ?opts pkgs =
-    let open Result.Syntax in
     Global.apply (Option.value ~default:(Global.default ()) opts);
     let global_state, repo_state, _ = check_init () in
     let+ switch_state = check_switch global_state repo_state in
@@ -248,11 +247,15 @@ let opam_run_s cmd =
   | Error e -> Error e
 
 let opam_run_l cmd =
-  let open Result.Syntax in
+  let open Astring in
   let+ out = opam_run_s cmd in
-  String.split_on_char '\n' out |> List.map String.trim
+  String.cuts ~sep:"\n" out |> List.map String.trim
 
 let opam_run cmd =
-  let open Result.Syntax in
   let+ _ = opam_run_s cmd in
   ()
+
+let root =
+  OS.Env.var "OPAMROOT" |> Option.map Fpath.v
+  |> Option.value
+       ~default:Fpath.(v (OS.Env.opt_var "HOME" ~absent:".") / ".opam")

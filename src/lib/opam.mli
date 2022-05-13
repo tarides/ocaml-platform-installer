@@ -92,3 +92,6 @@ val opam_run_l : Cmd.t -> (string list, [> R.msg ]) result
 val opam_run : Cmd.t -> (unit, [> R.msg ]) result
 (** A [Bos.Cmd] for calling Opam, the second argument is the sub-command to
     call. *)
+
+val root : Fpath.t
+(** TODO: Remove this. *)

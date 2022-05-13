@@ -1,4 +1,5 @@
 open Bos
+open Import
 
 module Opam_file : sig
   type t
@@ -17,7 +18,7 @@ end
 
 type t
 
-val init : name:string -> Fpath.t -> (t, 'e) OS.result
+val init : name:string -> Fpath.t -> (t, 'e) Result.or_msg
 val has_pkg : t -> pkg:string -> ver:string -> bool
 
 val add_package :

@@ -6,8 +6,8 @@ module Result = struct
   module Syntax = struct
     let ( let+ ) x f = Result.map f x
     let ( let* ) x f = Result.bind x f
-    let ( >>= ) = Rresult.( >>= )
-    let ( >>| ) = Rresult.( >>| )
+    let ( >>| ) x f = Result.map f x
+    let ( >>= ) x f = Result.bind x f
   end
 
   let fold_list f lst acc =

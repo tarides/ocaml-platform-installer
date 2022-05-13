@@ -1,5 +1,6 @@
 open Bos
-open Rresult
+open Import
+open Result.Syntax
 
 module Opam_file = struct
   type t = opam_version:string -> pkg_name:string -> unit Fmt.t

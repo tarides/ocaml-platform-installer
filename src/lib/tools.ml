@@ -118,13 +118,14 @@ let install_binary_tool sandbox repo tool =
       Opam.opam_run
         Cmd.(v "install" % Binary_package.name_to_string bname))
 
-let repo_path = Fpath.v "./cache_repo"
-
 let install _ tools =
+  let binary_repo_path =
+    Fpath.(Opam.root / "plugins" / "ocaml-platform" / "cache")
+  in
   Opam.opam_run_s Cmd.(v "show" % "ocaml" % "-f" % "version" % "--normalise")
   >>= fun ovraw ->
   OV.of_string ovraw >>= fun ocaml_version ->
-  Binary_package.Binary_repo.init repo_path >>= fun repo ->
+  Binary_package.Binary_repo.init binary_repo_path >>= fun repo ->
   Sandbox_switch.init ~ocaml_version >>= fun sandbox ->
   Result.fold_list
     (fun () tool -> install_binary_tool sandbox repo tool)
