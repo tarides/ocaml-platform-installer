@@ -17,4 +17,7 @@ module Result : sig
     ('acc -> 'a -> ('acc, 'e) result) -> 'a list -> 'acc -> ('acc, 'e) or_msg
 
   val iter_until : ('a -> (unit, 'b) result) -> 'a list -> (unit, 'b) result
+
+  val errorf :
+    ('a, Format.formatter, unit, (_, [> `Msg of string ]) t) format4 -> 'a
 end
