@@ -4,12 +4,17 @@
 module Result : sig
   include module type of Result
 
+  type ('a, 'e) or_msg = ('a, ([> `Msg of string | `Multi of 'e list ] as 'e)) t
+
   module Syntax : sig
     val ( let+ ) : ('a, 'b) t -> ('a -> 'c) -> ('c, 'b) t
     val ( let* ) : ('a, 'b) t -> ('a -> ('c, 'b) t) -> ('c, 'b) t
     val ( >>| ) : ('a, 'b) t -> ('a -> 'c) -> ('c, 'b) t
     val ( >>= ) : ('a, 'b) t -> ('a -> ('c, 'b) t) -> ('c, 'b) t
   end
+
+  val fold_list :
+    ('acc -> 'a -> ('acc, 'e) result) -> 'a list -> 'acc -> ('acc, 'e) or_msg
 
   val iter_until : ('a -> (unit, 'b) result) -> 'a list -> (unit, 'b) result
 end

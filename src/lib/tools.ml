@@ -114,32 +114,21 @@ let install_binary_tool sandbox repo tool =
   let name, _ = parse_pkg_name_ver tool.name in
   binary_name_of_tool sandbox tool.name >>= fun bname ->
   make_binary_package sandbox repo bname tool name >>= fun () ->
-  Repo.with_repo_enabled repo (fun () ->
+  Repo.with_repo_enabled (Binary_package.Binary_repo.repo repo) (fun () ->
       Opam.opam_run
         Cmd.(v "install" % Binary_package.name_to_string bname))
+
+let repo_path = Fpath.v "./cache_repo"
 
 let install _ tools =
   Opam.opam_run_s Cmd.(v "show" % "ocaml" % "-f" % "version" % "--normalise")
   >>= fun ovraw ->
   OV.of_string ovraw >>= fun ocaml_version ->
-  Repo.init () >>= fun repo ->
+  Binary_package.Binary_repo.init repo_path >>= fun repo ->
   Sandbox_switch.init ~ocaml_version >>= fun sandbox ->
-  let iterate res tools =
-    List.fold_left
-      (fun last_res tool ->
-        match (last_res, install_binary_tool sandbox repo tool) with
-        | Ok (), Ok () -> Ok ()
-        | Error l, Ok () -> Error l
-        | Ok (), Error err -> Error [ err ]
-        | Error l, Error err -> Error (err :: l))
-      res tools
-  in
-  let res = iterate (Ok ()) tools in
-  match res with
-  | Ok e -> Ok e
-  | Error l ->
-      let l = List.map (function `Msg e -> e | _ -> failwith "TODO") l in
-      Error (`Msg (String.concat ~sep:"\n" l))
+  Result.fold_list
+    (fun () tool -> install_binary_tool sandbox repo tool)
+    tools ()
 
 (** TODO: This should be moved to an other module to for example do automatic
     recognizing of ocamlformat's version. *)

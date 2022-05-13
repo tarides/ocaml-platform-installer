@@ -17,7 +17,7 @@ end
 
 type t
 
-val init : unit -> (t, 'e) OS.result
+val init : name:string -> Fpath.t -> (t, 'e) OS.result
 val has_pkg : t -> pkg:string -> ver:string -> bool
 
 val add_package :

@@ -35,7 +35,7 @@ module Opam_file = struct
     field_opt ppf "url" gen_url url
 end
 
-type t = Fpath.t
+type t = { name : string; path : Fpath.t }
 
 let opam_version = "2.0"
 
@@ -49,22 +49,20 @@ let init_repo path =
   |}
     opam_version
 
-let repo_name = "platform-cache"
-let repo_path = Fpath.v "./cache_repo"
-
-let init () =
-  OS.Dir.exists repo_path >>= fun initialized ->
-  if initialized then Ok repo_path
+let init ~name path =
+  OS.Dir.exists path >>= fun initialized ->
+  let repo = { name; path } in
+  if initialized then Ok repo
   else
-    init_repo repo_path >>= fun _ ->
+    init_repo path >>= fun _ ->
     Opam.opam_run
       Cmd.(
-        v "repository" % "add" % "--dont-select" % "-k" % "local" % repo_name
-        % p repo_path)
-    >>= fun () -> Ok repo_path
+        v "repository" % "add" % "--dont-select" % "-k" % "local" % name
+        % p path)
+    >>= fun () -> Ok repo
 
 let repo_path_of_pkg t ~pkg ~ver =
-  Fpath.(t / "packages" / pkg / (pkg ^ "." ^ ver))
+  Fpath.(t.path / "packages" / pkg / (pkg ^ "." ^ ver))
 
 let has_pkg t ~pkg ~ver =
   match OS.Dir.exists (repo_path_of_pkg t ~pkg ~ver) with
@@ -79,11 +77,11 @@ let add_package t ~pkg ~ver opam =
     "%a"
     (opam ~opam_version ~pkg_name:pkg)
     ()
-  >>= fun () -> Opam.opam_run Cmd.(v "update" % "--no-auto-upgrade" % repo_name)
+  >>= fun () -> Opam.opam_run Cmd.(v "update" % "--no-auto-upgrade" % t.name)
 
-let with_repo_enabled _ f =
+let with_repo_enabled t f =
   let unselect_repo () =
-    ignore (Opam.opam_run Cmd.(v "repository" % "remove" % repo_name))
+    ignore (Opam.opam_run Cmd.(v "repository" % "remove" % t.name))
   in
-  Opam.opam_run Cmd.(v "repository" % "add" % repo_name % p repo_path)
-  >>= fun () -> Fun.protect ~finally:unselect_repo f
+  Opam.opam_run Cmd.(v "repository" % "add" % t.name % p t.path) >>= fun () ->
+  Fun.protect ~finally:unselect_repo f

@@ -10,6 +10,10 @@ module Common = struct
   end
 end
 
+let rec log_error = function
+  | `Msg msg -> Printf.eprintf "%s" msg
+  | `Multi errs -> List.iter log_error errs
+
 let install_platform opam_opts =
   let install_res =
     let open Result.Syntax in
@@ -20,8 +24,8 @@ let install_platform opam_opts =
   in
   match install_res with
   | Ok () -> 0
-  | Error (`Msg msg) ->
-      Printf.eprintf "%s" msg;
+  | Error e ->
+      log_error e;
       1
 
 let main () =
