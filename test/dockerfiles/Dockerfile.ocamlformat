@@ -1,0 +1,15 @@
+ARG TARGETPLATFORM=$TARGETPLATFORM
+
+FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
+
+FROM ocaml-platform-install-in-small-project-$TARGETPLATFORM:latest
+
+COPY --from=base /home/opam/ocaml-platform/_build/default/src/bin/main.exe /usr/local/bin/ocaml-platform
+
+RUN true
+    # https://stackoverflow.com/questions/51115856/docker-failed-to-export-image-failed-to-create-image-failed-to-get-layer
+
+COPY test/tests/ocamlformat.sh .
+
+RUN bash ocamlformat.sh
+
