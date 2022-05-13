@@ -135,7 +135,6 @@ let install _ tools =
 let platform =
   [
     { name = "dune" };
-    { name = "utop" };
     { name = "dune-release" };
     { name = "merlin" };
     { name = "ocaml-lsp-server" };
