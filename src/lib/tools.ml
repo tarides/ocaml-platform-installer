@@ -113,10 +113,10 @@ let install _ tools =
   >>= fun ovraw ->
   OV.of_string ovraw >>= fun ocaml_version ->
   Binary_repo.init binary_repo_path >>= fun repo ->
-  Sandbox_switch.init ~ocaml_version >>= fun sandbox ->
-  Result.fold_list
-    (fun () tool -> install_binary_tool sandbox repo tool)
-    tools ()
+  Sandbox_switch.with_sandbox_switch ~ocaml_version (fun sandbox ->
+      Result.fold_list
+        (fun () tool -> install_binary_tool sandbox repo tool)
+        tools ())
 
 (** TODO: This should be moved to an other module to for example do automatic
     recognizing of ocamlformat's version. *)
