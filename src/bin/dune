@@ -1,12 +1,7 @@
-(rule
- (with-stdout-to
-  static_linking_flags
-  (run ocaml %{dep:config/static_linking_flags.ml} %{ocaml-config:target})))
-
 (executable
  (name main)
  (public_name platform)
  (flags
   (:standard
-   (:include static_linking_flags)))
+   (:include ../static-linking-flags/flags)))
  (libraries platform cmdliner opam-client))

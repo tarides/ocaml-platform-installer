@@ -1,11 +1,13 @@
 open Cmdliner
+open! Platform.Import
 
-let cmds = [ Opam.t ]
-
-let install_platform opam_opts =
+let install_platform _opam_opts =
   let install_res =
-    let _ = Platform.Opam.check_init ~opts:opam_opts () in
-    match Platform.Tools.(install opam_opts platform) with
+    let open Result.Syntax in
+    let* () = Platform.Opam.install () in
+    (* let _ = Platform.Opam.check_init ~opts:opam_opts () in *)
+    (* match Platform.Tools.(install opam_opts platform) with *)
+    match Ok () with
     | Ok () -> Ok ()
     | Error errs ->
         let err = List.map (fun (`Msg msg) -> msg) errs |> String.concat "\n" in
@@ -32,7 +34,12 @@ let main () =
     let doc = "Install all OCaml Platform tools in your current switch." in
     Cmd.info "ocaml-platform" ~doc ~version:"%%VERSION%%"
   in
-  let group = Cmd.group ~default:term info cmds in
-  Stdlib.exit @@ Cmd.eval' group
+  match Array.to_list Sys.argv with
+  | _ocaml_platform :: "opam" :: _rest ->
+      (* Very brittle, what if we add options and run `ocaml-platform --opt
+         opam`? Seems fine for now though, let's revisit this when it's a
+         problem. *)
+      Stdlib.exit @@ Cmd.eval' ~catch:false ~argv:Opam.argv Opam.t
+  | _ -> Stdlib.exit @@ Cmd.eval' (Cmd.v info term)
 
 let () = main ()

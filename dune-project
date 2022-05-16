@@ -33,6 +33,7 @@
    (>= 1.1.0))
   base64
   bos
+  ppxlib
   (opam-core
    (>= 2.1.0))
   (opam-client

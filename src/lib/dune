@@ -1,3 +1,3 @@
 (library
  (name platform)
- (libraries bos.setup opam-core opam-state opam-client))
+ (libraries bin_proxy bos.setup opam-core opam-state opam-client))

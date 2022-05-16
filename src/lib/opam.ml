@@ -70,6 +70,23 @@ module Global = struct
     OpamArg.apply_global_options cli t
 end
 
+let is_installed () = Bos.OS.Cmd.exists (Bos.Cmd.v "opam-test")
+
+let install () =
+  let open Result.Syntax in
+  let+ is_installed = is_installed () in
+  if is_installed then
+    Printf.printf "Opam is already installed, skipping installation.\n"
+  else
+    let path =
+      match Sys.os_type with
+      | "Unix" -> "/usr/local/bin/opam-test"
+      | "Win32" | "Cygwin" -> failwith "What's the binary path on Windows?"
+      | _ -> assert false
+    in
+    Printf.printf "Installing opam in %s.\n" path;
+    Bin_proxy.write_to path
+
 let check_init ?opts () =
   let root =
     Option.value
@@ -87,7 +104,9 @@ let check_init ?opts () =
       (global_state, repo_state, [])
     else
       let shell = OpamStd.Sys.guess_shell_compat () in
-      let init_config = OpamInitDefaults.init_config ~sandboxing:true () in
+      (* TODO: we should pass sandboxing:true when the environment allows it
+         (i.e. in most cases when we're not running in Docker). *)
+      let init_config = OpamInitDefaults.init_config ~sandboxing:false () in
       (* Handling already init-ed, if yes should we `opam update` ? *)
       OpamClient.init ~interactive:false ~init_config ~update_config:false shell
   in

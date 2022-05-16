@@ -1,6 +1,9 @@
 (executable
  (name main)
  (libraries unix)
+ (flags
+  (:standard
+   (:include ../static-linking-flags/flags)))
  (modules main))
 
 (rule
@@ -22,4 +25,5 @@
  (public_name platform.bin-proxy)
  (libraries)
  (modules asset bin_proxy)
- (preprocess (pps embed)))
+ (preprocess
+  (pps embed)))

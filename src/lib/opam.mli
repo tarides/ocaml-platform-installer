@@ -65,3 +65,9 @@ val check_init :
   OpamStateTypes.rw OpamStateTypes.global_state
   * OpamStateTypes.unlocked OpamStateTypes.repos_state
   * OpamFormula.atom list
+
+val install : unit -> (unit, [> `Msg of string ]) result
+(** Installs opam (currently by executing the opam shell script). *)
+
+val is_installed : unit -> (bool, [> `Msg of string ]) result
+(** Checks if opam is already installed or not. *)
