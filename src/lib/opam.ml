@@ -70,7 +70,7 @@ module Global = struct
     OpamArg.apply_global_options cli t
 end
 
-let is_installed () = Bos.OS.Cmd.exists (Bos.Cmd.v "opam-test")
+let is_installed () = Bos.OS.Cmd.exists (Bos.Cmd.v "opam")
 
 let install () =
   let open Result.Syntax in
@@ -80,7 +80,7 @@ let install () =
   else
     let path =
       match Sys.os_type with
-      | "Unix" -> "/usr/local/bin/opam-test"
+      | "Unix" -> "/usr/local/bin/opam"
       | "Win32" | "Cygwin" -> failwith "What's the binary path on Windows?"
       | _ -> assert false
     in
