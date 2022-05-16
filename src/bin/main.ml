@@ -20,7 +20,7 @@ let install_platform opam_opts =
     let* () = Platform.Opam.install () in
     let _ = Platform.Opam.check_init ~opts:opam_opts () in
     let* () = Platform.Opam.Switch.install ~opts:opam_opts [] in
-    Platform.Tools.(install opam_opts platform)
+    Platform.Tools.(install opam_opts (platform ()))
   in
   match install_res with
   | Ok () -> 0

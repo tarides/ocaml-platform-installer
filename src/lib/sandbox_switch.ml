@@ -31,8 +31,12 @@ let a_switch t = Cmd.(v "--switch" % switch_name t.ocaml_version)
 let pin t ~pkg ~url =
   Opam.opam_run Cmd.(v "pin" %% a_switch t % "add" % "-ny" % pkg % url)
 
-let install t ~pkgs =
-  Opam.opam_run Cmd.(v "install" %% a_switch t % "-y" %% of_list pkgs)
+let pkg_to_string (pkg_name, pkg_ver) =
+  match pkg_ver with None -> pkg_name | Some ver -> pkg_name ^ "." ^ ver
+
+let install t ~pkg =
+  let pkg = pkg_to_string pkg in
+  Opam.opam_run Cmd.(v "install" %% a_switch t % "-y" % pkg)
 
 let list_files t ~pkg =
   Opam.opam_run_l Cmd.(v "show" %% a_switch t % "--list-files" % pkg)
