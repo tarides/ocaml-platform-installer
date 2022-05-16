@@ -4,7 +4,7 @@ open Bos
 module OV = Ocaml_version
 open Result.Syntax
 
-type tool = { name : string }
+type tool = { name : string; pure_binary : bool }
 (* FIXME: Once we use the opam library, let's use something like
    [OpamPackage.Name.t] for the type of [name] and something like ... for the
    type of [compiler_constr].*)
@@ -86,11 +86,12 @@ let best_available_version sandbox name =
   version
 
 let binary_name_of_tool sandbox tool =
-  let name, ver = parse_pkg_name_ver tool in
+  let name, ver = parse_pkg_name_ver tool.name in
   (match (name, ver) with
   | _, Some ver -> Ok ver
-  | _, None -> best_available_version sandbox tool)
-  >>| fun ver -> Binary_package.binary_name sandbox ~name ~ver
+  | _, None -> best_available_version sandbox tool.name)
+  >>| fun ver ->
+  Binary_package.binary_name sandbox ~name ~ver ~pure_binary:tool.pure_binary
 
 let make_binary_package sandbox repo bname tool tool_name =
   if Binary_package.has_binary_package repo bname then Ok ()
@@ -100,7 +101,7 @@ let make_binary_package sandbox repo bname tool tool_name =
 
 let install_binary_tool sandbox repo tool =
   let name, _ = parse_pkg_name_ver tool.name in
-  binary_name_of_tool sandbox tool.name >>= fun bname ->
+  binary_name_of_tool sandbox tool >>= fun bname ->
   make_binary_package sandbox repo bname tool name >>= fun () ->
   Repo.with_repo_enabled (Binary_repo.repo repo) (fun () ->
       Opam.opam_run Cmd.(v "install" % Binary_package.name_to_string bname))
@@ -122,10 +123,10 @@ let install _ tools =
     recognizing of ocamlformat's version. *)
 let platform =
   [
-    { name = "dune" };
-    { name = "dune-release" };
-    { name = "merlin" };
-    { name = "ocaml-lsp-server" };
-    { name = "odoc" };
-    { name = "ocamlformat" };
+    { name = "dune"; pure_binary = true };
+    { name = "dune-release"; pure_binary = false };
+    { name = "merlin"; pure_binary = false };
+    { name = "ocaml-lsp-server"; pure_binary = false };
+    { name = "odoc"; pure_binary = false };
+    { name = "ocamlformat"; pure_binary = false };
   ]

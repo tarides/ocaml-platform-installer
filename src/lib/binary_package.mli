@@ -6,7 +6,9 @@ open Bos
 
 type t
 
-val binary_name : Sandbox_switch.t -> name:string -> ver:string -> t
+val binary_name :
+  Sandbox_switch.t -> name:string -> ver:string -> pure_binary:bool -> t
+
 val name_to_string : t -> string
 
 val has_binary_package : Binary_repo.t -> t -> bool
