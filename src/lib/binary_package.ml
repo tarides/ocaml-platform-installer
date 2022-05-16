@@ -7,7 +7,7 @@ type t = { name : string; ver : string }
 
 (** Name and version of the binary package corresponding to a given package. *)
 let binary_name sandbox ~name ~ver ~pure_binary =
-  let name = if pure_binary then name else name ^ "+cached" in
+  let name = if pure_binary then name else name ^ "+bin+platform" in
   let ocaml_version = Sandbox_switch.ocaml_version sandbox in
   { name; ver = ver ^ "-ocaml" ^ Ocaml_version.to_string ocaml_version }
 
