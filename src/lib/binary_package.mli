@@ -2,7 +2,6 @@
     Package definitions and source archives are stored in {!Binary_repo}. *)
 
 open! Import
-open Bos
 
 type t
 
@@ -18,7 +17,7 @@ val make_binary_package :
   Sandbox_switch.t ->
   Binary_repo.t ->
   t ->
-  tool_name:string ->
-  (unit, 'e) OS.result
+  name:string ->
+  (unit, 'e) Result.or_msg
 (** Make a binary package from the result of installing a package in the sandbox
     switch. *)

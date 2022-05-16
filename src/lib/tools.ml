@@ -4,16 +4,10 @@ open Bos
 module OV = Ocaml_version
 open Result.Syntax
 
-type tool = { name : string; pure_binary : bool }
+type tool = { name : string; pure_binary : bool; version : string option }
 (* FIXME: Once we use the opam library, let's use something like
    [OpamPackage.Name.t] for the type of [name] and something like ... for the
    type of [compiler_constr].*)
-
-let parse_pkg_name_ver s =
-  let open Astring in
-  match String.cut ~sep:"." s with
-  | Some (n, v) -> (n, Some v)
-  | None -> (s, None)
 
 let parse_constraints s =
   let open Angstrom in
@@ -86,23 +80,22 @@ let best_available_version sandbox name =
   version
 
 let binary_name_of_tool sandbox tool =
-  let name, ver = parse_pkg_name_ver tool.name in
-  (match (name, ver) with
-  | _, Some ver -> Ok ver
-  | _, None -> best_available_version sandbox tool.name)
+  (match tool.version with
+  | Some ver -> Ok ver
+  | None -> best_available_version sandbox tool.name)
   >>| fun ver ->
-  Binary_package.binary_name sandbox ~name ~ver ~pure_binary:tool.pure_binary
+  Binary_package.binary_name sandbox ~name:tool.name ~ver
+    ~pure_binary:tool.pure_binary
 
-let make_binary_package sandbox repo bname tool tool_name =
+let make_binary_package sandbox repo bname tool =
   if Binary_package.has_binary_package repo bname then Ok ()
   else
-    Sandbox_switch.install sandbox ~pkgs:[ tool.name ] >>= fun () ->
-    Binary_package.make_binary_package sandbox repo bname ~tool_name
+    Sandbox_switch.install sandbox ~pkg:(tool.name, tool.version) >>= fun () ->
+    Binary_package.make_binary_package sandbox repo bname ~name:tool.name
 
 let install_binary_tool sandbox repo tool =
-  let name, _ = parse_pkg_name_ver tool.name in
   binary_name_of_tool sandbox tool >>= fun bname ->
-  make_binary_package sandbox repo bname tool name >>= fun () ->
+  make_binary_package sandbox repo bname tool >>= fun () ->
   Repo.with_repo_enabled (Binary_repo.repo repo) (fun () ->
       Opam.opam_run Cmd.(v "install" % Binary_package.name_to_string bname))
 
@@ -119,14 +112,30 @@ let install _ tools =
         (fun () tool -> install_binary_tool sandbox repo tool)
         tools ())
 
+let find_ocamlformat_version () =
+  match OS.File.read_lines (Fpath.v ".ocamlformat") with
+  | Ok f ->
+      List.filter_map
+        (fun s ->
+          Astring.String.cut ~sep:"=" s |> function
+          | Some (a, b) -> Some (String.trim a, String.trim b)
+          | None -> None)
+        f
+      |> List.assoc_opt "version"
+  | Error (`Msg _) -> None
+
 (** TODO: This should be moved to an other module to for example do automatic
     recognizing of ocamlformat's version. *)
-let platform =
+let platform () =
   [
-    { name = "dune"; pure_binary = true };
-    { name = "dune-release"; pure_binary = false };
-    { name = "merlin"; pure_binary = false };
-    { name = "ocaml-lsp-server"; pure_binary = false };
-    { name = "odoc"; pure_binary = false };
-    { name = "ocamlformat"; pure_binary = false };
+    { name = "dune"; pure_binary = true; version = None };
+    { name = "dune-release"; pure_binary = false; version = None };
+    { name = "merlin"; pure_binary = false; version = None };
+    { name = "ocaml-lsp-server"; pure_binary = false; version = None };
+    { name = "odoc"; pure_binary = false; version = None };
+    {
+      name = "ocamlformat";
+      pure_binary = false;
+      version = find_ocamlformat_version ();
+    };
   ]
