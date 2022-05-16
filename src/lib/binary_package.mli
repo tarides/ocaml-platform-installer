@@ -18,6 +18,7 @@ val make_binary_package :
   Binary_repo.t ->
   t ->
   name:string ->
+  pure_binary:bool ->
   (unit, 'e) Result.or_msg
 (** Make a binary package from the result of installing a package in the sandbox
     switch. *)

@@ -88,10 +88,11 @@ let binary_name_of_tool sandbox tool =
     ~pure_binary:tool.pure_binary
 
 let make_binary_package sandbox repo bname tool =
+  let { name; pure_binary; _ } = tool in
   if Binary_package.has_binary_package repo bname then Ok ()
   else
     Sandbox_switch.install sandbox ~pkg:(tool.name, tool.version) >>= fun () ->
-    Binary_package.make_binary_package sandbox repo bname ~name:tool.name
+    Binary_package.make_binary_package sandbox repo bname ~name ~pure_binary
 
 let install_binary_tool sandbox repo tool =
   binary_name_of_tool sandbox tool >>= fun bname ->
