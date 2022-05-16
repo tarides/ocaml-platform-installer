@@ -1,5 +1,6 @@
 *
 !src/
+!test/
 !dune
 !dune-project
 !platform.opam
