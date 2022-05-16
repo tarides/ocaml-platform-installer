@@ -27,7 +27,7 @@
  (name platform)
  (synopsis "The best way for developers to write software in OCaml")
  (description
-  "The OCaml Platform represents the best way for developers, both new and old, to write software in OCaml. It combines the a coherent set of tools, documentation and resources to be productive with OCaml.")
+  "The OCaml Platform represents the best way for developers, both new and old, to write software in OCaml. It combines a coherent set of tools, documentation and resources to be productive with OCaml.")
  (depends
   (cmdliner
    (>= 1.1.0))
