@@ -1,6 +1,15 @@
 open Cmdliner
 open! Platform.Import
 
+module Common = struct
+  [@@@ocaml.warning "-32"]
+
+  module Syntax = struct
+    let ( let+ ) t f = Term.(const f $ t)
+    let ( and+ ) a b = Term.(const (fun x y -> (x, y)) $ a $ b)
+  end
+end
+
 let install_platform opam_opts =
   let install_res =
     let open Result.Syntax in
@@ -20,14 +29,22 @@ let install_platform opam_opts =
 
 let main () =
   let term =
-    let opt_root =
-      Bos.OS.Env.var "OPAMROOT" |> Option.map OpamFilename.Dir.of_string
+    let open Common.Syntax in
+    let+ log_level =
+      let env = Cmd.Env.info "OCAML_PLATFORM_VERBOSITY" in
+      Logs_cli.level ~docs:Manpage.s_common_options ~env ()
     in
     let opts =
+      let opt_root =
+        Bos.OS.Env.var "OPAMROOT" |> Option.map OpamFilename.Dir.of_string
+      in
       let default = Platform.Opam.Global.default () in
       { default with yes = Some true; opt_root }
     in
-    Term.(const install_platform $ const opts)
+    Fmt_tty.setup_std_outputs ();
+    Logs.set_level log_level;
+    Logs.set_reporter (Logs_fmt.reporter ~app:Fmt.stdout ());
+    install_platform opts
   in
   let info =
     let doc = "Install all OCaml Platform tools in your current switch." in

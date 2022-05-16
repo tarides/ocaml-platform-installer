@@ -34,9 +34,9 @@ module Global = struct
 
   let infer_verbose_level_from_logs () =
     match Logs.level () with
-    | None | Some App | Some Error -> 0
-    | Some Warning -> 1
-    | Some Info | Some Debug -> 2
+    | None | Some App | Some Error | Some Warning -> 0
+    | Some Info -> 1
+    | Some Debug -> 2
 
   let default () : t =
     let debug_level = infer_debug_level_from_logs () in
@@ -203,17 +203,22 @@ module Switch = struct
     in
     if success then Ok () else Error (`Msg "The update failed")
 
-  (* Opam upgrade is complicated, a few points to be wary of: - The
-     `only_installed` argument when set to true tells opam to NOT install
+  (* Opam upgrade is complicated, a few points to be wary of:
+
+     - The `only_installed` argument when set to true tells opam to NOT install
      packages which are currently pinned but not installed. By default we pass
      in the CWD so if packages are pinned to it and uninstalled they would be
      installed by upgrade. Currently when we `ocaml-platform install` we pin and
-     install so that's not too much of an issue. - We want to take into account
-     the current local directory packages to ensure we don't upgrade ourselves
-     into a non-functioning state. - `opam upgrade` has a "fixup" mode which
-     could be reported as a possible solution to the end-user but we don't
-     support that. - The `atoms` passed to `OpamClient.upgrade` are kept
-     installed (or reinstalled with confirmation). *)
+     install so that's not too much of an issue.
+
+     - We want to take into account the current local directory packages to
+     ensure we don't upgrade ourselves into a non-functioning state.
+
+     - `opam upgrade` has a "fixup" mode which could be reported as a possible
+     solution to the end-user but we don't support that.
+
+     - The `atoms` passed to `OpamClient.upgrade` are kept installed (or
+     reinstalled with confirmation). *)
   let upgrade ?opts atom_locs =
     Global.apply (Option.value ~default:(Global.default ()) opts);
     OpamGlobalState.with_ `Lock_none @@ fun gt ->
