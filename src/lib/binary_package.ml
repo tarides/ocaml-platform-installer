@@ -6,10 +6,10 @@ open Bos
 type t = { name : string; ver : string }
 
 (** Name and version of the binary package corresponding to a given package. *)
-let binary_name sandbox ~name ~ver ~pure_binary =
+let binary_name ~ocaml_version ~name ~ver ~pure_binary =
   let name = if pure_binary then name else name ^ "+bin+platform" in
-  let ocaml_version = Sandbox_switch.ocaml_version sandbox in
-  { name; ver = ver ^ "-ocaml" ^ Ocaml_version.to_string ocaml_version }
+  let ocaml_version = Ocaml_version.to_string ocaml_version in
+  { name; ver = ver ^ "-ocaml" ^ ocaml_version }
 
 let name_to_string { name; ver } = name ^ "." ^ ver
 
