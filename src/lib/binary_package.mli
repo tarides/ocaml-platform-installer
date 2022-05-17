@@ -6,7 +6,11 @@ open! Import
 type t
 
 val binary_name :
-  Sandbox_switch.t -> name:string -> ver:string -> pure_binary:bool -> t
+  ocaml_version:Ocaml_version.t ->
+  name:string ->
+  ver:string ->
+  pure_binary:bool ->
+  t
 
 val name_to_string : t -> string
 
