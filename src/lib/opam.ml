@@ -87,7 +87,32 @@ let install () =
     Printf.printf "Installing opam in %s.\n" path;
     Bin_proxy.write_to path
 
+let check_switch_or_create
+    (global_state : OpamStateTypes.rw OpamStateTypes.global_state) repo_state
+    default_compiler =
+  match OpamStateConfig.get_switch_opt () with
+  | Some switch_state ->
+      OpamSwitchState.load `Lock_write global_state repo_state switch_state
+  | None ->
+      let invariant = OpamFile.Config.default_invariant global_state.config in
+      let switch_name = OpamSwitch.of_string "default" in
+      let (), ret =
+        OpamSwitchCommand.create global_state ~rt:repo_state
+          ~invariant
+            (* Be carefl changing this, [update] assumes this is [true] *)
+          ~update_config:true (* Local switch in current-directory *)
+          switch_name (fun switch_state ->
+            (* Better compiler heuristics not just default - system compiler? -
+               latest compatible compiler (with opam files in cwd)? - later,
+               relocatable compilers? *)
+            ( (),
+              OpamSwitchCommand.install_compiler switch_state
+                ~additional_installs:default_compiler ))
+      in
+      ret
+
 let check_init ?opts () =
+  Global.apply (Option.value ~default:(Global.default ()) opts);
   let root =
     Option.value
       ~default:OpamStateConfig.(!r.root_dir)
@@ -110,7 +135,10 @@ let check_init ?opts () =
       (* Handling already init-ed, if yes should we `opam update` ? *)
       OpamClient.init ~interactive:false ~init_config ~update_config:false shell
   in
-  (global_state, repo_state, default_compiler)
+  let switch_state =
+    check_switch_or_create global_state repo_state default_compiler
+  in
+  (global_state, repo_state, switch_state)
 
 let check_switch (global_state : OpamStateTypes.rw OpamStateTypes.global_state)
     repo_state =
@@ -121,42 +149,12 @@ let check_switch (global_state : OpamStateTypes.rw OpamStateTypes.global_state)
       Error
         (`Msg "The current directory does not have an initialized opam switch.")
 
-let check_switch_or_create
-    (global_state : OpamStateTypes.rw OpamStateTypes.global_state) repo_state
-    default_compiler =
-  match OpamStateConfig.get_current_switch_from_cwd global_state.root with
-  | Some switch_state ->
-      OpamSwitchState.load `Lock_write global_state repo_state switch_state
-  | None ->
-      let invariant = OpamFile.Config.default_invariant global_state.config in
-      let _, ret =
-        OpamSwitchCommand.create global_state ~rt:repo_state
-          ~invariant
-            (* Be carefl changing this, [update] assumes this is [true] *)
-          ~update_config:true
-          (* Local switch in current-directory *)
-          (OpamSwitch.of_dirname (OpamFilename.Dir.of_string "."))
-          (fun switch_state ->
-            (* Better compiler heuristics not just default - system compiler? -
-               latest compatible compiler (with opam files in cwd)? - later,
-               relocatable compilers? *)
-            ( (),
-              OpamSwitchCommand.install_compiler switch_state
-                ~additional_installs:default_compiler ))
-      in
-      ret
-
 module Switch = struct
   (* Prelude applies global options and checks for a local switch and that opam
      is initalised. *)
   let install ?opts pkgs =
     Global.apply (Option.value ~default:(Global.default ()) opts);
-    let global_state, repo_state, default_compiler = check_init () in
-    (* TODO:patrick Should probably check for opam files in cwd, if none don't
-       create switch ? *)
-    let switch_state =
-      check_switch_or_create global_state repo_state default_compiler
-    in
+    let _global_state, _repo_state, switch_state = check_init () in
     let switch_state, atoms = OpamAuxCommands.autopin switch_state pkgs in
     OpamSwitchState.drop @@ OpamClient.install switch_state atoms;
     Ok ()
@@ -188,12 +186,7 @@ module Switch = struct
     (* Not calling OpamStateConfig.update as we don't pass [jobs] (yet?) *)
     (* Not calling OpamClientConfig.update -- apply_global_options does this? *)
     Global.apply (Option.value ~default:(Global.default ()) opts);
-    let global_state, repo_state, default_compiler = check_init () in
-    (* OpamClient.update calls [get_switch_opt] so is switch-based, ensure there
-       is a switch and that the config is updated *)
-    let _switch_state =
-      check_switch_or_create global_state repo_state default_compiler
-    in
+    let global_state, _repo_state, _switch_state = check_init () in
     let success, _changed, _rt =
       OpamClient.update global_state ~repos_only:false
         ~dev_only:false

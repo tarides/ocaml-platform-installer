@@ -15,6 +15,7 @@ let install_platform opam_opts =
     let open Result.Syntax in
     let* () = Platform.Opam.install () in
     let _ = Platform.Opam.check_init ~opts:opam_opts () in
+    let* () = Platform.Opam.Switch.install ~opts:opam_opts [] in
     match Platform.Tools.(install opam_opts platform) with
     | Ok () -> Ok ()
     | Error errs ->

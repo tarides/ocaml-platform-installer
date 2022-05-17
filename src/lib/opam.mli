@@ -59,12 +59,15 @@ module Switch : sig
       installed. *)
 end
 
+(* TODO: Abstract the switch_state into [Switch.t] and pass it to every
+   functions of [Switch]. To avoid internally calling [check_init] and
+   [Global.apply] many times. *)
 val check_init :
   ?opts:OpamArg.global_options ->
   unit ->
   OpamStateTypes.rw OpamStateTypes.global_state
   * OpamStateTypes.unlocked OpamStateTypes.repos_state
-  * OpamFormula.atom list
+  * OpamStateTypes.rw OpamStateTypes.switch_state
 
 val install : unit -> (unit, [> `Msg of string ]) result
 (** Installs opam (currently by executing the opam shell script). *)
