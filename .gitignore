@@ -1,4 +1,11 @@
-_build
+# Dune build directory
+_build/
+
+# Merlin configuring file for Vim and Emacs
+.merlin
+
+# Dune generated files
 *.install
-*.merlin
-_opam
+
+# Local opam switch
+_opam/

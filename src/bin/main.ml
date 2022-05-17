@@ -1,45 +1,61 @@
-open! Platform.Import
 open Cmdliner
-open Result.Monad
+open! Platform.Import
 
-let handle_err ~err =
-  Result.map_error (fun (`Msg msg) ->
-      Platform.UserInteractions.errorf "%s" msg;
-      err)
+module Common = struct
+  [@@@ocaml.warning "-32"]
 
-let exec ~skip ~err f = if skip then Ok () else handle_err ~err (f ())
-
-let handle_errs ~err =
-  Result.map_error (fun l ->
-      List.iter (fun (`Msg msg) -> Platform.UserInteractions.errorf "%s" msg) l;
-      err)
+  module Syntax = struct
+    let ( let+ ) t f = Term.(const f $ t)
+    let ( and+ ) a b = Term.(const (fun x y -> (x, y)) $ a $ b)
+  end
+end
 
 let install_platform opam_opts =
   let install_res =
-    let open Platform.Opam in
-    let* skip_install = is_installed () |> handle_err ~err:1 in
-    let* () = exec ~skip:skip_install ~err:30 install in
-    let* () = exec ~skip:(is_initialized opam_opts) ~err:31 (init opam_opts) in
-    Platform.Tools.(install opam_opts platform) |> handle_errs ~err:32
+    let open Result.Syntax in
+    let* () = Platform.Opam.install () in
+    let _ = Platform.Opam.check_init ~opts:opam_opts () in
+    match Platform.Tools.(install opam_opts platform) with
+    | Ok () -> Ok ()
+    | Error errs ->
+        let err = List.map (fun (`Msg msg) -> msg) errs |> String.concat "\n" in
+        Error (`Msg err)
   in
-  match install_res with Ok () -> 0 | Error st -> st
+  match install_res with
+  | Ok () -> 0
+  | Error (`Msg msg) ->
+      Printf.eprintf "%s" msg;
+      1
 
-let cmd =
-  let yes = true
-  and root =
-    Bos.OS.Env.var "OPAMROOT" |> Option.map Fpath.v
-    |> Option.value
-         ~default:Fpath.(v (Bos.OS.Env.opt_var "HOME" ~absent:".") / ".opam")
-  in
+let main () =
   let term =
-    Term.(const install_platform $ const { Platform.Opam.yes; root })
+    let open Common.Syntax in
+    let+ log_level =
+      let env = Cmd.Env.info "OCAML_PLATFORM_VERBOSITY" in
+      Logs_cli.level ~docs:Manpage.s_common_options ~env ()
+    in
+    let opts =
+      let opt_root =
+        Bos.OS.Env.var "OPAMROOT" |> Option.map OpamFilename.Dir.of_string
+      in
+      let default = Platform.Opam.Global.default () in
+      { default with yes = Some true; opt_root }
+    in
+    Fmt_tty.setup_std_outputs ();
+    Logs.set_level log_level;
+    Logs.set_reporter (Logs_fmt.reporter ~app:Fmt.stdout ());
+    install_platform opts
   in
   let info =
     let doc = "Install all OCaml Platform tools in your current switch." in
-    Cmd.info "ocaml-platform" ~doc
-      ~version:"%%VERSION%%" (* ~sdocs ~exits ~man *)
+    Cmd.info "ocaml-platform" ~doc ~version:"%%VERSION%%"
   in
-  Cmd.v info term
+  match Array.to_list Sys.argv with
+  | _ocaml_platform :: "opam" :: _rest ->
+      (* Very brittle, what if we add options and run `ocaml-platform --opt
+         opam`? Seems fine for now though, let's revisit this when it's a
+         problem. *)
+      Stdlib.exit @@ Cmd.eval' ~catch:false ~argv:Opam.argv Opam.t
+  | _ -> Stdlib.exit @@ Cmd.eval' (Cmd.v info term)
 
-let main () = Stdlib.exit @@ Cmd.eval' cmd
 let () = main ()

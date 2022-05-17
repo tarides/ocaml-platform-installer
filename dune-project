@@ -11,24 +11,30 @@
  "Jules Aguillon"
  "Paul-Elliot Anglès d'Auriac"
  "Sonja Heinze"
- "Thibaut Mattio")
+ "Thibaut Mattio"
+ "Patrick Ferris")
 
 (maintainers
  "Jules Aguillon"
- "Paul-Elliot Angl\195\168s d'Auriac"
+ "Paul-Elliot Anglès d'Auriac"
  "Sonja Heinze"
- "Thibaut Mattio")
+ "Thibaut Mattio"
+ "Patrick Ferris")
 
-(license LICENSE)
+(license ISC)
 
 (package
  (name platform)
- (allow_empty)
- (synopsis "Set-up an OCaml environment")
- (description "")
+ (synopsis "The best way for developers to write software in OCaml")
+ (description
+  "The OCaml Platform represents the best way for developers, both new and old, to write software in OCaml. It combines a coherent set of tools, documentation and resources to be productive with OCaml.")
  (depends
-  ocaml
-  dune
   (cmdliner
    (>= 1.1.0))
-  bos))
+  base64
+  bos
+  ppxlib
+  (opam-core
+   (>= 2.1.0))
+  (opam-client
+   (>= 2.1.0))))
