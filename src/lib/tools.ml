@@ -104,9 +104,13 @@ let install _ tools =
   let binary_repo_path =
     Fpath.(Opam.root / "plugins" / "ocaml-platform" / "cache")
   in
-  Opam.opam_run_s Cmd.(v "show" % "ocaml" % "-f" % "version" % "--normalise")
+  Opam.opam_run_s
+    Cmd.(v "show" % "ocaml" % "-f" % "installed-version" % "--normalise")
   >>= fun ovraw ->
-  OV.of_string ovraw >>= fun ocaml_version ->
+  (match ovraw with
+  | "--" -> Result.errorf "Cannot install tools: No switch is selected."
+  | s -> OV.of_string s)
+  >>= fun ocaml_version ->
   Binary_repo.init binary_repo_path >>= fun repo ->
   Sandbox_switch.with_sandbox_switch ~ocaml_version (fun sandbox ->
       Result.fold_list
