@@ -116,10 +116,14 @@ let install _ tools =
         (to_build, Binary_package.name_to_string bname :: to_install))
       tools ([], [])
   in
-  Sandbox_switch.with_sandbox_switch ~ocaml_version (fun sandbox ->
-      Result.fold_list
-        (fun () (tool, bname) -> make_binary_package sandbox repo bname tool)
-        tools_to_build ())
+  (match tools_to_build with
+  | [] -> Ok ()
+  | _ :: _ ->
+      Sandbox_switch.with_sandbox_switch ~ocaml_version (fun sandbox ->
+          Result.fold_list
+            (fun () (tool, bname) ->
+              make_binary_package sandbox repo bname tool)
+            tools_to_build ()))
   >>= fun () ->
   Repo.with_repo_enabled (Binary_repo.repo repo) (fun () ->
       Result.fold_list
