@@ -1,6 +1,6 @@
 (executable
  (name main)
- (public_name platform)
+ (public_name ocaml-platform)
  (flags
   (:standard
    (:include ../static-linking-flags/flags)))

@@ -61,11 +61,20 @@ jobs:
       - name: Get executables from docker image
         run: mkdir -p release ; chmod a+rw release ; docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release ocaml-platform-build-${{ matrix.platform.name }} cp /home/opam/ocaml-platform/_build/default/src/bin/main.exe /release/ocaml-platform-${{ matrix.platform.filename_suffix }}.exe
 
+      - name: Get archive from docker image
+        run: docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release ocaml-platform-build-${{ matrix.platform.name }} cp /home/opam/ocaml-platform/*.tar /release/
+
       - name: upload linux artifacts
         uses: actions/upload-artifact@v3
         with:
           name: binaries
           path: release/ocaml-platform-*.exe
+
+      - name: upload archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: archives
+          path: release/*.tar
 
   mac-build:
     strategy:
@@ -94,7 +103,7 @@ jobs:
         run: opam install --deps-only --with-test --with-doc -y .
 
       - name: build
-        run: opam exec -- dune build
+        run: export TARGETOS=macos; export TARGETARCH=amd64; bash test/tests/build.sh
 
       - name: cp file
         run: cp _build/default/src/bin/main.exe ocaml-platform-macos.exe
@@ -104,6 +113,12 @@ jobs:
         with:
           name: binaries
           path: ocaml-platform-macos.exe
+
+      - name: upload archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: archives
+          path: ocaml-platform-macos-amd64.tar
 
   mac-test:
     needs: [mac-build]

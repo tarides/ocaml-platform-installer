@@ -4,6 +4,7 @@
  (flags
   (:standard
    (:include ../static-linking-flags/flags)))
+ (public_name opam)
  (modules main))
 
 (rule
