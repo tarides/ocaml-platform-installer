@@ -2,6 +2,7 @@
 set -euo pipefail
 
 PLAT="${OCAMLPLATFORM_PLATFORM:-linux/amd64}"
+VERSION="${VERSION:-}"
 
 echo "Building the binary for $PLAT"
 
