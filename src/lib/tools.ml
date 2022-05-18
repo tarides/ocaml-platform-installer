@@ -126,9 +126,7 @@ let install _ tools =
             tools_to_build ()))
   >>= fun () ->
   Repo.with_repo_enabled (Binary_repo.repo repo) (fun () ->
-      Result.fold_list
-        (fun () tool_nv -> Opam.opam_run Cmd.(v "install" % tool_nv))
-        tools_to_install ())
+      Opam.opam_run Cmd.(v "install" %% of_list tools_to_install))
 
 let find_ocamlformat_version () =
   match OS.File.read_lines (Fpath.v ".ocamlformat") with
