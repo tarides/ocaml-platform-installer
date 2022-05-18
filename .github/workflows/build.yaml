@@ -61,8 +61,11 @@ jobs:
       - name: Get executables from docker image
         run: mkdir -p release ; chmod a+rw release ; docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release ocaml-platform-build-${{ matrix.platform.name }} cp /home/opam/ocaml-platform/_build/default/src/bin/main.exe /release/ocaml-platform-${{ matrix.platform.filename_suffix }}.exe
 
+      - name: Create release archive
+        run: OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh release
+
       - name: Get archive from docker image
-        run: docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release ocaml-platform-build-${{ matrix.platform.name }} cp /home/opam/ocaml-platform/*.tar /release/
+        run: docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release ocaml-platform-release-${{ matrix.platform.name }} cp /home/opam/ocaml-platform/*.tar /release/
 
       - name: upload linux artifacts
         uses: actions/upload-artifact@v3
@@ -103,10 +106,13 @@ jobs:
         run: opam install --deps-only --with-test --with-doc -y .
 
       - name: build
-        run: export TARGETOS=macos; export TARGETARCH=amd64; bash test/tests/build.sh
+        run: bash test/tests/build.sh
 
       - name: cp file
         run: cp _build/default/src/bin/main.exe ocaml-platform-macos.exe
+
+      - name: create release archive
+        run: export TARGETOS=macos; export TARGETARCH=amd64; bash test/tests/release.sh
 
       - name: upload mac artifacts
         uses: actions/upload-artifact@v3
