@@ -2,7 +2,7 @@ open Import
 
 type tool
 
-val install : Opam.Global.t -> tool list -> (unit, 'e) Result.or_msg
+val install : tool list -> (unit, 'e) Result.or_msg
 (** [install tools] installs each tool in [tools] inside the current switch, if
     it isn't already installed *)
 

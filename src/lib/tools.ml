@@ -54,16 +54,14 @@ let verify_constraints version constraints =
   List.for_all (verify_constraint version) constraints
 
 let best_available_version ocaml_version name =
-  Opam.opam_run_s Cmd.(v "show" % "-f" % "available-versions" % name)
-  >>| fun versions ->
+  let open Result.Syntax in
+  let+ versions = Opam.Show.available_versions name in
   let version =
-    String.cuts ~sep:"  " versions
-    |> List.rev
+    versions
     |> List.find (fun version ->
            let ocaml_depends =
-             Opam.opam_run_l
-               Cmd.(v "show" % "-f" % "depends:" % (name ^ "." ^ version))
-             >>| List.find_opt (String.is_prefix ~affix:"\"ocaml\"")
+             let+ depends = Opam.Show.depends (name ^ "." ^ version) in
+             List.find_opt (String.is_prefix ~affix:"\"ocaml\"") depends
            in
            match ocaml_depends with
            | Ok (Some ocaml_constraint) ->
@@ -90,13 +88,11 @@ let make_binary_package sandbox repo bname tool =
   Sandbox_switch.install sandbox ~pkg:(tool.name, tool.version) >>= fun () ->
   Binary_package.make_binary_package sandbox repo bname ~name ~pure_binary
 
-let install _ tools =
+let install tools =
   let binary_repo_path =
     Fpath.(Opam.root / "plugins" / "ocaml-platform" / "cache")
   in
-  Opam.opam_run_s
-    Cmd.(v "show" % "ocaml" % "-f" % "installed-version" % "--normalise")
-  >>= fun ovraw ->
+  let* ovraw = Opam.Show.installed_version "ocaml" in
   (match ovraw with
   | "--" -> Result.errorf "Cannot install tools: No switch is selected."
   | s -> OV.of_string s)
@@ -126,7 +122,7 @@ let install _ tools =
             tools_to_build ()))
   >>= fun () ->
   Repo.with_repo_enabled (Binary_repo.repo repo) (fun () ->
-      Opam.opam_run Cmd.(v "install" %% of_list tools_to_install))
+      Opam.install tools_to_install)
 
 let find_ocamlformat_version () =
   match OS.File.read_lines (Fpath.v ".ocamlformat") with

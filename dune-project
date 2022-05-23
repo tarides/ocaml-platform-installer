@@ -34,9 +34,6 @@
   (cmdliner
    (>= 1.1.0))
   base64
+  astring
   bos
-  ppxlib
-  (opam-core
-   (>= 2.1.0))
-  (opam-client
-   (>= 2.1.0))))
+  ppxlib))

@@ -1,10 +1,3 @@
 (library
  (name platform)
- (libraries
-  angstrom
-  ocaml-version
-  bin_proxy
-  bos.setup
-  opam-core
-  opam-state
-  opam-client))
+ (libraries astring angstrom ocaml-version bos.setup))
