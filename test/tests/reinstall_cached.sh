@@ -1,22 +1,18 @@
 #/usr/bin/env bash
 set -xeuo pipefail
 
-# Test that the tools are not rebuilt in the sandbox switch if they have been
-# cached. To do that, remove the sandbox switch, uninstall some packages and
-# ask the platform to reinstall them.
-# If the sandbox switch wasn't recreated, success.
+# Test that the sandbox switch and the tools are not built again when they are
+# installed a second time. 
+# To do that, remove the "default" repository from the selection of new
+# switches, this will prevent any switch from being created.
 
 eval `opam env`
 
-DEFAULT_SANDBOX_SWITCH=$HOME/.opam/opam-tools-4.14.0
-[[ -e $DEFAULT_SANDBOX_SWITCH ]]
-rm -rf $DEFAULT_SANDBOX_SWITCH
+opam repository remove --set-default default
 
-opam remove ocamlformat+cached odoc+cached
+opam remove ocamlformat+bin+platform odoc+bin+platform
 
-printf "\n" | ocaml-platform -vv
+ocaml-platform -vv
 
-! [[ -e $DEFAULT_SANDBOX_SWITCH ]]
- 
 ocamlformat --version
 odoc --version
