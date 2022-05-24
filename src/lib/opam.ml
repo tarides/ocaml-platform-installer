@@ -80,7 +80,8 @@ module Repository = struct
         v "repository" % "add" % "--this-switch" % "-k" % "local" % name % url)
 
   let remove opam_opts name =
-    Cmd.run opam_opts Bos.Cmd.(v "repository" % "remove" % name)
+    Cmd.run opam_opts
+      Bos.Cmd.(v "repository" % "--this-switch" % "remove" % name)
 end
 
 module Show = struct
