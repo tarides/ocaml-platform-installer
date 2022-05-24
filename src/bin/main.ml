@@ -16,7 +16,6 @@ let rec log_error = function
 
 let install_platform () =
   let install_res =
-    let open Result.Syntax in
     let _ = Platform.Opam.check_init () in
     Platform.Tools.(install (platform ()))
   in

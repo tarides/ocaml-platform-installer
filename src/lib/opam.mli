@@ -7,7 +7,7 @@ module Config : sig
 end
 
 module Switch : sig
-  val list : unit -> 'a
+  val list : unit -> (string list, [> Rresult.R.msg ]) result
 
   val create :
     ?ocaml_version:string -> string -> (unit, [> `Msg of string ]) result
