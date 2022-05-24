@@ -86,7 +86,7 @@ module Show = struct
 end
 
 let install ?switch pkgs =
-  let cmd = cmd_with_pos_args pkgs Bos.Cmd.(v "install" % "-y") in
+  let cmd = cmd_with_pos_args pkgs Bos.Cmd.(v "install") in
   Cmd.run ?switch cmd
 
 let remove ?switch pkgs =
