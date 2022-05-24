@@ -38,7 +38,7 @@ module Config = struct
 end
 
 module Switch = struct
-  let list () = Cmd.run_l (Bos.Cmd.(v "switch" % "list" % "--short"))
+  let list () = Cmd.run_l Bos.Cmd.(v "switch" % "list" % "--short")
 
   let create ?ocaml_version switch_arg =
     let cmd =
@@ -57,7 +57,7 @@ module Repository = struct
   let add ~url name =
     Cmd.run
       Bos.Cmd.(
-        v "repository" % "add" % "-k" % "local" % name % url)
+        v "repository" % "add" % "--this-switch" % "-k" % "local" % name % url)
 
   let remove name = Cmd.run Bos.Cmd.(v "repository" % "remove" % name)
 end
