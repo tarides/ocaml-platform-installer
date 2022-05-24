@@ -7,7 +7,6 @@
  (libraries
   platform
   cmdliner
-  opam-client
   logs
   logs.fmt
   logs.cli

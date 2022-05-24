@@ -1,6 +1,5 @@
 open Bos
 open Import
-open Result.Syntax
 
 module Opam_file = struct
   type t = opam_version:string -> pkg_name:string -> unit Fmt.t
@@ -41,7 +40,8 @@ type t = { name : string; path : Fpath.t }
 let opam_version = "2.0"
 
 let init_repo path =
-  OS.Dir.create path >>= fun _ ->
+  let open Result.Syntax in
+  let* _ = OS.Dir.create path in
   OS.Dir.create (Fpath.add_seg path "packages") >>= fun _ ->
   OS.File.writef
     (Fpath.add_seg path "repo")
@@ -50,17 +50,15 @@ let init_repo path =
   |}
     opam_version
 
-let init ~name path =
-  OS.Dir.exists path >>= fun initialized ->
+let init opam_opts ~name path =
+  let open Result.Syntax in
+  let* initialized = OS.Dir.exists path in
   let repo = { name; path } in
   if initialized then Ok repo
   else
-    init_repo path >>= fun _ ->
-    Opam.opam_run
-      Cmd.(
-        v "repository" % "add" % "--dont-select" % "-k" % "local" % name
-        % p path)
-    >>= fun () -> Ok repo
+    let* _ = init_repo path in
+    let* () = Opam.Repository.add opam_opts ~url:(Fpath.to_string path) name in
+    Ok repo
 
 let repo_path_of_pkg t ~pkg ~ver =
   Fpath.(t.path / "packages" / pkg / (pkg ^ "." ^ ver))
@@ -70,19 +68,23 @@ let has_pkg t ~pkg ~ver =
   | Ok r -> r
   | Error _ -> false
 
-let add_package t ~pkg ~ver opam =
+let add_package opam_opts t ~pkg ~ver opam =
+  let open Result.Syntax in
   let repo_path = repo_path_of_pkg t ~pkg ~ver in
-  OS.Dir.create repo_path >>= fun _ ->
-  OS.File.writef
-    Fpath.(repo_path / "opam")
-    "%a"
-    (opam ~opam_version ~pkg_name:pkg)
-    ()
-  >>= fun () -> Opam.opam_run Cmd.(v "update" % "--no-auto-upgrade" % t.name)
-
-let with_repo_enabled t f =
-  let unselect_repo () =
-    ignore (Opam.opam_run Cmd.(v "repository" % "remove" % t.name))
+  let* _ = OS.Dir.create repo_path in
+  let* () =
+    OS.File.writef
+      Fpath.(repo_path / "opam")
+      "%a"
+      (opam ~opam_version ~pkg_name:pkg)
+      ()
   in
-  Opam.opam_run Cmd.(v "repository" % "add" % t.name % p t.path) >>= fun () ->
+  Opam.update opam_opts [ t.name ]
+
+let with_repo_enabled opam_opts t f =
+  let open Result.Syntax in
+  let unselect_repo () = ignore @@ Opam.Repository.remove opam_opts t.name in
+  let* () =
+    Opam.Repository.add opam_opts ~url:(Fpath.to_string t.path) t.name
+  in
   Fun.protect ~finally:unselect_repo f
