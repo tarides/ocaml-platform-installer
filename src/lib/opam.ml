@@ -38,7 +38,7 @@ module Config = struct
 end
 
 module Switch = struct
-  let list () = failwith "TODO"
+  let list () = Cmd.run_l (Bos.Cmd.(v "switch" % "list" % "--short"))
 
   let create ?ocaml_version switch_arg =
     let cmd =
