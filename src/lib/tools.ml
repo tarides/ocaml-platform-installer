@@ -53,14 +53,16 @@ let verify_constraint version constraint_ =
 let verify_constraints version constraints =
   List.for_all (verify_constraint version) constraints
 
-let best_available_version ocaml_version name =
+let best_available_version opam_opts ocaml_version name =
   let open Result.Syntax in
-  let+ versions = Opam.Show.available_versions name in
+  let+ versions = Opam.Show.available_versions opam_opts name in
   let version =
     versions
     |> List.find (fun version ->
            let ocaml_depends =
-             let+ depends = Opam.Show.depends (name ^ "." ^ version) in
+             let+ depends =
+               Opam.Show.depends opam_opts (name ^ "." ^ version)
+             in
              List.find_opt (String.is_prefix ~affix:"\"ocaml\"") depends
            in
            match ocaml_depends with
@@ -75,36 +77,39 @@ let best_available_version ocaml_version name =
   in
   version
 
-let best_version_of_tool ocaml_version tool =
+let best_version_of_tool opam_opts ocaml_version tool =
   (match tool.version with
   | Some ver -> Ok ver
-  | None -> best_available_version ocaml_version tool.name)
+  | None -> best_available_version opam_opts ocaml_version tool.name)
   >>| fun ver ->
   Binary_package.binary_name ~ocaml_version ~name:tool.name ~ver
     ~pure_binary:tool.pure_binary
 
-let make_binary_package sandbox repo bname tool =
+let make_binary_package opam_opts sandbox repo bname tool =
   let { name; pure_binary; _ } = tool in
-  Sandbox_switch.install sandbox ~pkg:(tool.name, tool.version) >>= fun () ->
-  Binary_package.make_binary_package sandbox repo bname ~name ~pure_binary
+  Sandbox_switch.install opam_opts sandbox ~pkg:(tool.name, tool.version)
+  >>= fun () ->
+  Binary_package.make_binary_package opam_opts sandbox repo bname ~name
+    ~pure_binary
 
-let install tools =
+let install opam_opts tools =
   let binary_repo_path =
-    Fpath.(Opam.root / "plugins" / "ocaml-platform" / "cache")
+    Fpath.(
+      opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
   in
-  let* ovraw = Opam.Show.installed_version "ocaml" in
+  let* ovraw = Opam.Show.installed_version opam_opts "ocaml" in
   (match ovraw with
   | "--" -> Result.errorf "Cannot install tools: No switch is selected."
   | s -> OV.of_string s)
   >>= fun ocaml_version ->
-  Binary_repo.init binary_repo_path >>= fun repo ->
+  Binary_repo.init opam_opts binary_repo_path >>= fun repo ->
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
   let* tools_to_build, tools_to_install =
     Result.fold_list
       (fun (to_build, to_install) tool ->
-        let+ bname = best_version_of_tool ocaml_version tool in
+        let+ bname = best_version_of_tool opam_opts ocaml_version tool in
         let to_build =
           if Binary_package.has_binary_package repo bname then to_build
           else (tool, bname) :: to_build
@@ -115,14 +120,15 @@ let install tools =
   (match tools_to_build with
   | [] -> Ok ()
   | _ :: _ ->
-      Sandbox_switch.with_sandbox_switch ~ocaml_version (fun sandbox ->
+      Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version
+        (fun sandbox ->
           Result.fold_list
             (fun () (tool, bname) ->
-              make_binary_package sandbox repo bname tool)
+              make_binary_package opam_opts sandbox repo bname tool)
             tools_to_build ()))
   >>= fun () ->
-  Repo.with_repo_enabled (Binary_repo.repo repo) (fun () ->
-      Opam.install tools_to_install)
+  Repo.with_repo_enabled opam_opts (Binary_repo.repo repo) (fun () ->
+      Opam.install opam_opts tools_to_install)
 
 let find_ocamlformat_version () =
   match OS.File.read_lines (Fpath.v ".ocamlformat") with

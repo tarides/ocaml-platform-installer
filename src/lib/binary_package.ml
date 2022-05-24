@@ -33,13 +33,13 @@ let process_path prefix path =
 
 (** Binary is already in the sandbox. Add this binary as a package in the local
     repo *)
-let make_binary_package sandbox repo ({ name; ver } as bname) ~name:query_name
-    ~pure_binary =
+let make_binary_package opam_opts sandbox repo ({ name; ver } as bname)
+    ~name:query_name ~pure_binary =
   let prefix = Sandbox_switch.switch_path_prefix sandbox in
   let archive_path =
     Binary_repo.archive_path repo ~unique_name:(name_to_string bname ^ ".tar.gz")
   in
-  Sandbox_switch.list_files sandbox ~pkg:query_name >>= fun paths ->
+  Sandbox_switch.list_files opam_opts sandbox ~pkg:query_name >>= fun paths ->
   let paths =
     List.filter_map (process_path prefix) paths
     |> List.map Fpath.to_string |> String.concat ~sep:"\n"
@@ -60,4 +60,4 @@ let make_binary_package sandbox repo ({ name; ver } as bname) ~name:query_name
       generate_opam_file query_name pure_binary archive_path
         (Sandbox_switch.ocaml_version sandbox)
     in
-    Repo.add_package (Binary_repo.repo repo) ~pkg:name ~ver opam
+    Repo.add_package opam_opts (Binary_repo.repo repo) ~pkg:name ~ver opam

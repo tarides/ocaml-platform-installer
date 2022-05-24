@@ -50,14 +50,14 @@ let init_repo path =
   |}
     opam_version
 
-let init ~name path =
+let init opam_opts ~name path =
   let open Result.Syntax in
   let* initialized = OS.Dir.exists path in
   let repo = { name; path } in
   if initialized then Ok repo
   else
     let* _ = init_repo path in
-    let* () = Opam.Repository.add ~url:(Fpath.to_string path) name in
+    let* () = Opam.Repository.add opam_opts ~url:(Fpath.to_string path) name in
     Ok repo
 
 let repo_path_of_pkg t ~pkg ~ver =
@@ -68,7 +68,7 @@ let has_pkg t ~pkg ~ver =
   | Ok r -> r
   | Error _ -> false
 
-let add_package t ~pkg ~ver opam =
+let add_package opam_opts t ~pkg ~ver opam =
   let open Result.Syntax in
   let repo_path = repo_path_of_pkg t ~pkg ~ver in
   let* _ = OS.Dir.create repo_path in
@@ -79,10 +79,12 @@ let add_package t ~pkg ~ver opam =
       (opam ~opam_version ~pkg_name:pkg)
       ()
   in
-  Opam.update [ t.name ]
+  Opam.update opam_opts [ t.name ]
 
-let with_repo_enabled t f =
+let with_repo_enabled opam_opts t f =
   let open Result.Syntax in
-  let unselect_repo () = ignore @@ Opam.Repository.remove t.name in
-  let* () = Opam.Repository.add ~url:(Fpath.to_string t.path) t.name in
+  let unselect_repo () = ignore @@ Opam.Repository.remove opam_opts t.name in
+  let* () =
+    Opam.Repository.add opam_opts ~url:(Fpath.to_string t.path) t.name
+  in
   Fun.protect ~finally:unselect_repo f
