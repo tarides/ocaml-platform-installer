@@ -57,7 +57,7 @@ module Repository = struct
   let add ~url name =
     Cmd.run
       Bos.Cmd.(
-        v "repository" % "add" % "--dont-select" % "-k" % "local" % name % url)
+        v "repository" % "add" % "-k" % "local" % name % url)
 
   let remove name = Cmd.run Bos.Cmd.(v "repository" % "remove" % name)
 end
