@@ -18,7 +18,6 @@ let install_platform () =
   let install_res =
     let open Result.Syntax in
     let _ = Platform.Opam.check_init () in
-    let* () = Platform.Opam.Switch.create "4.14.0" in
     Platform.Tools.(install (platform ()))
   in
   match install_res with
