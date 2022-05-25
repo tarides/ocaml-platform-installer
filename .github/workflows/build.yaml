@@ -61,7 +61,7 @@ jobs:
         run: |
           mkdir -p release; chmod a+rw release;
           docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release \
-            -e VERSION=${{ env.GITHUB_REF_NAME }} \
+            -e VERSION=$GITHUB_REF_NAME \
             -e TARGETOS=linux \
             -e TARGETARCH=${{ matrix.platform.target_arch }} \
             -e OUTPUT=/release \
@@ -102,7 +102,7 @@ jobs:
           export OUTPUT=$PWD/release;
           export TARGETOS=macos;
           export TARGETARCH=x86_64;
-          export VERSION=${{ env.GITHUB_REF_NAME }};
+          export VERSION=$GITHUB_REF_NAME;
           opam exec -- bash src/distrib/release.sh
 
       - name: upload archives
@@ -126,7 +126,7 @@ jobs:
           path: .
 
       - name: Copy binary to path
-        run: cp ocaml-platform-${{ env.GITHUB_REF_NAME }}-macos-x86_64.exe /usr/local/bin/ocaml-platform; chmod a+x /usr/local/bin/ocaml-platform
+        run: cp ocaml-platform-$GITHUB_REF_NAME-macos-x86_64.exe /usr/local/bin/ocaml-platform; chmod a+x /usr/local/bin/ocaml-platform
 
       - name: Test install
         run: bash test/tests/install.sh
