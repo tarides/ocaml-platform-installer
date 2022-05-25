@@ -41,6 +41,14 @@ $(
     ;;
 esac
 
+# Taken from Opam's installer. Args: dest_path url
+download()
+{
+    if command -v wget >/dev/null; then wget -O "\$@"
+    else curl -L -o "\$@"
+    fi
+}
+
 install_opam ()
 {
   local opam_bin opam_base_url sha512
@@ -60,14 +68,14 @@ install_opam ()
       exit 1
       ;;
   esac
-  curl -Lo opam "\$opam_base_url/\$opam_bin"
+  download opam "\$opam_base_url/\$opam_bin"
   sha512sum --check - <<<"\$sha512 opam"
   install -m755 "opam" "\$PREFIX/bin"
 }
 
 cd "\$(mktemp -d)"
 
-curl -LO "$ARCHIVES_URL/\$archive"
+download "\$archive" "$ARCHIVES_URL/\$archive"
 sha1sum --check - <<<"\$sha1 \$archive"
 tar xf "\$archive"
 install -m755 bin/* "\$PREFIX/bin"
