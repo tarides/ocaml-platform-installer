@@ -126,7 +126,10 @@ jobs:
           path: .
 
       - name: Copy binary to path
-        run: cp ocaml-platform-$GITHUB_REF_NAME-macos-x86_64.exe /usr/local/bin/ocaml-platform; chmod a+x /usr/local/bin/ocaml-platform
+        run: |
+          tar xf ocaml-platform-$GITHUB_REF_NAME-macos-x86_64.tar;
+          cp bin/ocaml-platform /usr/local/bin/ocaml-platform;
+          chmod a+x /usr/local/bin/ocaml-platform
 
       - name: Test install
         run: bash test/tests/install.sh
