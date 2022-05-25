@@ -13,6 +13,11 @@ jobs:
         platform:
           - { name: "linux/amd64", filename_suffix: "linux-amd64", target_arch: "x86_64" }
           - { name: "linux/arm64", filename_suffix: "linux-arm64", target_arch: "arm64" }
+        runAllTests:
+          - ${{ startsWith(github.ref, 'refs/tags/') }}
+        exclude:
+          - platform: { name: "linux/arm64", filename_suffix: "linux-arm64", target_arch: "arm64"  }
+            runAllTests: false
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
