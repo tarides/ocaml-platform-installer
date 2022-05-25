@@ -10,5 +10,5 @@ eval `opam env`
 
 ! [[ $(ocamlformat --version) = 0.19.0 ]]
 echo "version = 0.19.0" > .ocamlformat
-printf "\n" | ocaml-platform -vv
+ocaml-platform -vv
 [[ $(ocamlformat --version) = 0.19.0 ]]
