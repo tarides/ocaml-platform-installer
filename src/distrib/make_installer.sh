@@ -31,8 +31,8 @@ archive=ocaml-platform-$VERSION-\$static_targetos-\$targetarch.tar
 case \$archive in
 $(
   for a in "$@"; do
-    read sha1 _ < <(sha1sum $a)
-    echo "\"${a##*/}\") sha1=\"$sha1\" ;;"
+    read sha512 _ < <(sha512sum $a)
+    echo "\"${a##*/}\") sha512=\"$sha512\" ;;"
   done
 )
   *)
@@ -76,7 +76,7 @@ install_opam ()
 cd "\$(mktemp -d)"
 
 download "\$archive" "$ARCHIVES_URL/\$archive"
-sha1sum --check - <<<"\$sha1 \$archive"
+sha512sum --check - <<<"\$sha512 \$archive"
 tar xf "\$archive"
 install -m755 bin/* "\$PREFIX/bin"
 
