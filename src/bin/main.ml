@@ -39,8 +39,68 @@ let main () =
     install_platform ()
   in
   let info =
-    let doc = "Install all OCaml Platform tools in your current switch." in
-    Cmd.info "ocaml-platform" ~doc ~version:"%%VERSION%%"
+    let doc = "Install all OCaml Platform tools in your opam switch." in
+    let man =
+      [
+        `S Manpage.s_description;
+        `P
+          "The OCaml Platform represents the best way for developers to write \
+           software in OCaml. It combines the core OCaml compiler with a \
+           coherent set of tools, documentation, and resources.";
+        `P
+          "The $(mname) command line is an installer for the OCaml Platform. \
+           It will install the Platform tools on your system. The list of \
+           tools that are managed by $(mname) are:";
+        `P "- Package manager: $(b,opam)";
+        `Noblank;
+        `P "- Build system: $(b,dune)";
+        `Noblank;
+        `P "- Documentation generator: $(b,odoc)";
+        `Noblank;
+        `P "- Code formatter: $(b,ocamlformat)";
+        `Noblank;
+        `P "- Release helper: $(b,dune-release)";
+        `Noblank;
+        `P "- LSP server: $(b,ocaml-lsp)";
+        `Noblank;
+        `P "- REPL: $(b,utop)";
+        `Noblank;
+        `P "- Editor helper: $(b,merlin)";
+        `P
+          "The normal way of interacting with the $(mname) installer for the \
+           first time is through the installation script, which will also \
+           install the latest $(b,opam) distribution on your system.";
+        `P
+          "Once you've run the installation script, you can install the OCaml \
+           Platform tools in your current $(b,opam) switch by running \
+           $(mname).";
+        `P
+          "For more information on how to get running with OCaml, you can \
+           refer to the official Get Up and Running With OCaml guide: \
+           $(i,https://ocaml.org/docs/up-and-running).";
+        `S Manpage.s_examples;
+        `P
+          "The following commands will create a new project with a local opam \
+           switch and install the OCaml Platform tools in it:";
+        `Noblank;
+        `Pre
+          {|
+\$ mkdir my-project && cd my-project/
+\$ opam switch create . ocaml-base-compiler.4.14.0
+\$ ocaml-platform
+\$ eval $(opam env)
+\$ dune init proj demo .|};
+        `S Manpage.s_commands;
+        `S Manpage.s_bugs;
+        `P "Report them, see $(i,%%PKG_HOMEPAGE%%) for contact information.";
+        `S Manpage.s_authors;
+        `P "Jules Aguillon, $(i,https://github.com/Julow)";
+        `P "Paul-Elliot Anglès d'Auriac, $(i,https://github.com/panglesd)";
+        `P "Sonja Heinze, $(i,https://github.com/pitag-ha)";
+        `P "Thibaut Mattio, $(i,https://github.com/tmattio)";
+      ]
+    in
+    Cmd.info "ocaml-platform" ~man ~doc ~version:"%%VERSION%%"
   in
   Stdlib.exit @@ Cmd.eval' (Cmd.v info term)
 
