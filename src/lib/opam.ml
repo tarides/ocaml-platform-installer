@@ -35,11 +35,14 @@ module Cmd = struct
       @@ Bos.OS.File.with_tmp_output "opam-err-log-%s"
            (fun tmp _ () ->
              let res = Bos.OS.Cmd.(run_out ~err:(err_file tmp) cmd |> out_f) in
-             Logs.debug (fun m ->
-                 let s = Bos.OS.File.read tmp in
-                 match s with
-                 | Ok s -> m "%s" s
-                 | Error (`Msg e) -> m "Impossible to read opam log: %s" e);
+             let () =
+               let s = Bos.OS.File.read tmp in
+               match s with
+               | Ok "" -> ()
+               | Ok s -> Logs.debug (fun m -> m "%s" s)
+               | Error (`Msg e) ->
+                   Logs.debug (fun m -> m "Impossible to read opam log: %s" e)
+             in
              res)
            ()
     in
