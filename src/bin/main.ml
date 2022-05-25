@@ -71,7 +71,7 @@ let main () =
            first time is through the installation script, which will also \
            install the latest $(b,opam) distribution on your system.";
         `P
-          "Once you've run the installation script, you can install the OCaml \
+          "You can install the OCaml \
            Platform tools in your current $(b,opam) switch by running \
            $(mname).";
         `P
