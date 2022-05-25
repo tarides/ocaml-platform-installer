@@ -30,10 +30,19 @@ module Cmd = struct
 
   let run_gen opam_opts out_f cmd =
     let cmd = t opam_opts cmd in
-    Logs.debug (fun f -> f "Running command '%a'..." Bos.Cmd.pp cmd);
-    let* result, (_, status) = Bos.OS.Cmd.(run_out cmd |> out_f) in
-    Logs.debug (fun f ->
-        f "Running command '%a': %a" Bos.Cmd.pp cmd Bos.OS.Cmd.pp_status status);
+    let* result, (_, status) =
+      Result.flatten
+      @@ Bos.OS.File.with_tmp_output "opam-err-log-%s"
+           (fun tmp _ () ->
+             let res = Bos.OS.Cmd.(run_out ~err:(err_file tmp) cmd |> out_f) in
+             Logs.debug (fun m ->
+                 let s = Bos.OS.File.read tmp in
+                 match s with
+                 | Ok s -> m "%s" s
+                 | Error (`Msg e) -> m "Impossible to read opam log: %s" e);
+             res)
+           ()
+    in
     match status with
     | `Exited 0 -> Ok result
     | _ ->
@@ -97,8 +106,40 @@ module Show = struct
     Astring.String.cuts ~sep:"  " output |> List.rev
 
   let installed_version opam_opts pkg_name =
-    Cmd.run_s opam_opts
-      Bos.Cmd.(v "show" % pkg_name % "-f" % "installed-version" % "--normalise")
+    match
+      Cmd.run_s opam_opts
+        Bos.Cmd.(
+          v "show" % pkg_name % "-f" % "installed-version" % "--normalise")
+    with
+    | Ok "--" -> Ok None
+    | Ok s -> Ok (Some s)
+    | Error e -> Error e
+
+  let installed_versions opam_opts pkg_names =
+    let parse =
+      let open Angstrom in
+      let is_whitespace = function
+        | '\x20' | '\x0a' | '\x0d' | '\x09' -> true
+        | _ -> false
+      in
+      let whitespace = take_while is_whitespace in
+      let word = whitespace *> take_till is_whitespace in
+      let field f = whitespace *> string f *> word in
+      let parse_double_line = both (field "name") (field "installed-version") in
+      let parse = many parse_double_line in
+      fun s ->
+        match parse_string ~consume:Consume.All parse s with
+        | Ok e -> Ok e
+        | Error e -> Result.errorf "Error in parsing installed versions: %s" e
+    in
+    let* res =
+      Cmd.run_s opam_opts
+        Bos.Cmd.(
+          v "show" %% of_list pkg_names % "-f" % "name,installed-version"
+          % "--normalise")
+    in
+    let+ res = parse res in
+    List.map (function a, "--" -> (a, None) | a, s -> (a, Some s)) res
 
   let depends opam_opts pkg_name =
     Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "depends:" % pkg_name)

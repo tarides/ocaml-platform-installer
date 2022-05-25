@@ -13,6 +13,7 @@ val binary_name :
   t
 
 val name_to_string : t -> string
+val name : t -> string
 
 val has_binary_package : Binary_repo.t -> t -> bool
 (** Whether the repository already contain the binary version of a package. *)

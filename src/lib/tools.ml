@@ -99,36 +99,68 @@ let install opam_opts tools =
   in
   let* ovraw = Opam.Show.installed_version opam_opts "ocaml" in
   (match ovraw with
-  | "--" -> Result.errorf "Cannot install tools: No switch is selected."
-  | s -> OV.of_string s)
+  | None -> Result.errorf "Cannot install tools: No switch is selected."
+  | Some s -> OV.of_string s)
   >>= fun ocaml_version ->
   Binary_repo.init opam_opts binary_repo_path >>= fun repo ->
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
+  Logs.app (fun m -> m "Inferring tools version...");
   let* tools_to_build, tools_to_install =
+    let* version_list =
+      Opam.Show.installed_versions opam_opts
+        (List.map (fun tool -> tool.name) tools)
+    in
+    let small_bname tool =
+      Binary_package.(
+        name
+        @@ binary_name ~ocaml_version ~name:tool.name ~ver:""
+             ~pure_binary:tool.pure_binary)
+    in
+    let* binary_version_list =
+      Opam.Show.installed_versions opam_opts (List.map small_bname tools)
+    in
     Result.fold_list
       (fun (to_build, to_install) tool ->
-        let+ bname = best_version_of_tool opam_opts ocaml_version tool in
-        let to_build =
-          if Binary_package.has_binary_package repo bname then to_build
-          else (tool, bname) :: to_build
+        let pkg_version = List.assoc_opt tool.name version_list
+        and bin_pkg_version =
+          List.assoc_opt (small_bname tool) binary_version_list
         in
-        (to_build, Binary_package.name_to_string bname :: to_install))
+        match (pkg_version, bin_pkg_version) with
+        | Some (Some _), _ | _, Some (Some _) ->
+            Logs.info (fun m -> m "%s is already installed" tool.name);
+            Ok (to_build, to_install)
+        | _ ->
+            let+ bname = best_version_of_tool opam_opts ocaml_version tool in
+            Logs.info (fun m ->
+                m "%s will be installed as %s" tool.name
+                  (Binary_package.name_to_string bname));
+            let to_build =
+              if Binary_package.has_binary_package repo bname then to_build
+              else (tool, bname) :: to_build
+            in
+            (to_build, Binary_package.name_to_string bname :: to_install))
       tools ([], [])
   in
   (match tools_to_build with
   | [] -> Ok ()
   | _ :: _ ->
+      Logs.app (fun m -> m "Creating a sandbox to build the tools...");
       Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version
         (fun sandbox ->
           Result.fold_list
             (fun () (tool, bname) ->
+              Logs.app (fun m -> m "Building %s..." tool.name);
               make_binary_package opam_opts sandbox repo bname tool)
             tools_to_build ()))
   >>= fun () ->
-  Repo.with_repo_enabled opam_opts (Binary_repo.repo repo) (fun () ->
-      Opam.install opam_opts tools_to_install)
+  match tools_to_install with
+  | [] -> Ok ()
+  | _ ->
+      Repo.with_repo_enabled opam_opts (Binary_repo.repo repo) (fun () ->
+          Logs.app (fun m -> m "Installing tools...");
+          Opam.install opam_opts tools_to_install)
 
 let find_ocamlformat_version () =
   match OS.File.read_lines (Fpath.v ".ocamlformat") with

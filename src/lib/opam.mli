@@ -1,4 +1,5 @@
 open Bos_setup
+open Import
 
 module GlobalOpts : sig
   type t = { root : Fpath.t; switch : string option }
@@ -40,7 +41,12 @@ module Show : sig
     GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
 
   val installed_version :
-    GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
+    GlobalOpts.t -> string -> (string option, [> `Msg of string ]) result
+
+  val installed_versions :
+    GlobalOpts.t ->
+    string list ->
+    ((string * string option) list, 'a) Result.or_msg
 
   val depends :
     GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result

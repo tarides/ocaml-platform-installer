@@ -16,6 +16,7 @@ module Result : sig
   val fold_list :
     ('acc -> 'a -> ('acc, 'e) result) -> 'a list -> 'acc -> ('acc, 'e) or_msg
 
+  val flatten : (('a, 'b) result, 'b) result -> ('a, 'b) result
   val iter_until : ('a -> (unit, 'b) result) -> 'a list -> (unit, 'b) result
 
   val errorf :
