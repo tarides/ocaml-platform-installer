@@ -67,10 +67,6 @@ let main () =
         `Noblank;
         `P "- Editor helper: $(b,merlin)";
         `P
-          "The normal way of interacting with the $(mname) installer for the \
-           first time is through the installation script, which will also \
-           install the latest $(b,opam) distribution on your system.";
-        `P
           "You can install the OCaml \
            Platform tools in your current $(b,opam) switch by running \
            $(mname).";
