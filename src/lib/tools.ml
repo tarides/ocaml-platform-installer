@@ -112,23 +112,11 @@ let install opam_opts tools =
       Opam.Show.installed_versions opam_opts
         (List.map (fun tool -> tool.name) tools)
     in
-    let small_bname tool =
-      Binary_package.(
-        name
-        @@ binary_name ~ocaml_version ~name:tool.name ~ver:""
-             ~pure_binary:tool.pure_binary)
-    in
-    let* binary_version_list =
-      Opam.Show.installed_versions opam_opts (List.map small_bname tools)
-    in
     Result.fold_list
       (fun (to_build, to_install) tool ->
-        let pkg_version = List.assoc_opt tool.name version_list
-        and bin_pkg_version =
-          List.assoc_opt (small_bname tool) binary_version_list
-        in
-        match (pkg_version, bin_pkg_version) with
-        | Some (Some _), _ | _, Some (Some _) ->
+        let pkg_version = List.assoc_opt tool.name version_list in
+        match pkg_version with
+        | Some (Some _) ->
             Logs.info (fun m -> m "%s is already installed" tool.name);
             Ok (to_build, to_install)
         | _ ->
