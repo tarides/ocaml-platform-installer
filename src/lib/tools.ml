@@ -144,7 +144,9 @@ let install opam_opts tools =
             tools_to_build ()))
   >>= fun () ->
   match tools_to_install with
-  | [] -> Ok ()
+  | [] ->
+      Logs.app (fun m -> m "All tools are already installed");
+      Ok ()
   | _ ->
       Repo.with_repo_enabled opam_opts (Binary_repo.repo repo) (fun () ->
           Logs.app (fun m -> m "Installing tools...");
