@@ -84,7 +84,7 @@ let main () =
 \$ mkdir my-project && cd my-project/
 \$ opam switch create . ocaml-base-compiler.4.14.0
 \$ ocaml-platform
-\$ eval $(opam env)
+\$ eval \$(opam env)
 \$ dune init proj demo .|};
         `S Manpage.s_commands;
         `S Manpage.s_bugs;
