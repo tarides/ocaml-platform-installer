@@ -76,7 +76,9 @@ module Switch = struct
       match ocaml_version with
       | Some ocaml_version ->
           Bos.Cmd.(
-            v "switch" % "create" % switch_arg % ocaml_version % "--no-switch")
+            v "switch" % "create" % switch_arg
+            % ("ocaml-base-compiler." ^ ocaml_version)
+            % "--no-switch")
       | None -> Bos.Cmd.(v "switch" % "create" % switch_arg % "--no-switch")
     in
     Cmd.run opam_opts cmd
