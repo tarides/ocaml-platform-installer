@@ -26,5 +26,10 @@ module Result = struct
     | hd :: tl -> fn hd >>= fun () -> iter_until fn tl
     | [] -> Ok ()
 
+  let flatten = function
+    | Ok (Ok e) -> Ok e
+    | Ok (Error e) -> Error e
+    | Error e -> Error e
+
   let errorf fmt = Format.kasprintf (fun msg -> Error (`Msg msg)) fmt
 end

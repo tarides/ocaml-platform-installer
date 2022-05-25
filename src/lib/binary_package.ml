@@ -12,6 +12,7 @@ let binary_name ~ocaml_version ~name ~ver ~pure_binary =
   { name; ver = ver ^ "-ocaml" ^ ocaml_version }
 
 let name_to_string { name; ver } = name ^ "." ^ ver
+let name { name; ver = _ } = name
 
 let has_binary_package repo { name; ver } =
   Repo.has_pkg (Binary_repo.repo repo) ~pkg:name ~ver
