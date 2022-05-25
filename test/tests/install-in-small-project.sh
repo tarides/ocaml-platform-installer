@@ -5,4 +5,4 @@ cd helloworld
 
 eval $(opam env)
 
-ocaml-platform
+ocaml-platform -vv
