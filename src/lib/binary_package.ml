@@ -20,7 +20,7 @@ let has_binary_package repo { name; ver } =
 let generate_opam_file original_name pure_binary archive_path ocaml_version =
   let conflicts = if pure_binary then None else Some [ original_name ] in
   Repo.Opam_file.v
-    ~install:[ [ "cp"; "-aT"; "."; "%{prefix}%" ] ]
+    ~install:[ [ "cp"; "-pPR"; "."; "%{prefix}%" ] ]
     ~depends:[ ("ocaml", Some ("=", Ocaml_version.to_string ocaml_version)) ]
     ?conflicts ~url:archive_path
 

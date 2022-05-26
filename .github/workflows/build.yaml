@@ -46,15 +46,19 @@ jobs:
         run: docker image ls
 
       - name: Test install
+        if: ${{ matrix.platform.name == 'linux/amd64' }}
         run: OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh install
 
       - name: Test version
+        if: ${{ matrix.platform.name == 'linux/amd64' }}
         run: OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh version
 
       - name: Test odoc
+        if: ${{ matrix.platform.name == 'linux/amd64' }}
         run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh small-project install-in-small-project odoc
 
       - name: Test ocamlformat
+        if: ${{ matrix.platform.name == 'linux/amd64' }}
         run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh small-project install-in-small-project ocamlformat
 
       - name: Build release tarball
