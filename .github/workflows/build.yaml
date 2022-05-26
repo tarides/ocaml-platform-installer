@@ -125,9 +125,11 @@ jobs:
           name: archives
           path: .
 
-      - name: Copy binary to path
+      - name: Copy binaries to path
         run: |
           tar xf ocaml-platform-$GITHUB_REF_NAME-macos-x86_64.tar;
+          cp bin/opam /usr/local/bin/opam;
+          chmod a+x /usr/local/bin/opam;
           cp bin/ocaml-platform /usr/local/bin/ocaml-platform;
           chmod a+x /usr/local/bin/ocaml-platform
 
