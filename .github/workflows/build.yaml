@@ -115,41 +115,9 @@ jobs:
           name: archives
           path: release/*
 
-  mac-test:
-    if: ${{ startsWith(github.ref, 'refs/tags/') }}
-    needs: [mac-build]
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: archives
-          path: .
-
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v2
-        with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: ${{ matrix.os != 'macos-latest' }}
-
-      - name: Copy binaries to path
-        run: |
-          tar xf ocaml-platform-$GITHUB_REF_NAME-macos-x86_64.tar;
-          cp bin/ocaml-platform /usr/local/bin/ocaml-platform;
-          chmod a+x /usr/local/bin/ocaml-platform
-
-      - name: Test install
-        run: bash test/tests/install.sh
-
-      - name: Test suite
-        run: bash test/tests/small-project.sh ; bash test/tests/install-in-small-project.sh ; bash test/tests/odoc.sh ; bash test/tests/ocamlformat.sh ; 
-
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [linux-build, mac-build, mac-test]
+    needs: [linux-build, mac-build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
