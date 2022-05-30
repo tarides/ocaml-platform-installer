@@ -14,6 +14,8 @@ The install script simply downloads and installs the suitable version of `ocaml-
 
 You are then able to run `ocaml-platform`. It will install the platform tools in the current switch. Note that the first time the command is run for a given version of ocaml, installing the tools for the switch takes a few minutes.
 
+If you are an advanced user and want to understand how `ocaml-platform` works under the hood, go directly to the [Under the hood](#whats-under-the-hood) section.
+
 ### The advantages of using `ocaml-platform`
 
 The advantages are the following:
@@ -46,3 +48,34 @@ git clone git@github.com:tarides/ocaml-platform.git
 ```
 
 To run the test, see the [README](https://github.com/tarides/ocaml-platform/blob/main/test/README.md).
+
+## What’s under the hood
+
+Another disclaimer: the current implementation is a WIP, so what’s under the hood may (or may not) change in the future.
+
+Under the hood, `ocaml-platform` tool uses several mechanisms to install and cache the platform tools.
+
+### The sandbox switch
+
+The sandbox switch is a switch in which the tools will be compiled. The idea of having a separate switch is that the dependencies of development tools should not interfere with the dependencies of your project.
+
+When all tools have been built, every file related to the tools except for the libraries will be grouped in an opam package to be installed in the current switch.
+
+The opam package is put in a local "binary" switch.
+
+### The local binary switch
+
+As setting up a switch and building all platform tools there is costly in time, they are cached in a local opam repository.
+
+The packages in this repository consists of pre-compiled packages with no libraries, so they don’t have to be built and their installation consists only of copying files.
+
+The packages that miss the library compared to the original package have their name suffixed with `+bin+platform` to indicate where they come from, and installing the original package (eg to have the library) will replace the platform one. Their version contains the original version as well as the ocaml version they were compiled with, as this may be important for some tools.
+
+### The pipeline
+
+When prompted to install the platform tools, for a given switch, `ocaml-platform` does the following:
+- First, it checks which tools are already available in the local binary repo, and which needs to be built
+- Then, if needed, it creates the sandbox switch, builds the tools it needs to build, and create a package in the local binary repository for each of them.
+- Finally, it installs all tools from the local binary repository.
+
+Note that this mechanism makes `ocaml-platform` fully integrated with `opam`.
