@@ -76,8 +76,9 @@ Note that the repository is enabled by `ocaml-platform` only when it is needed, 
 ### The pipeline
 
 When prompted to install the platform tools, for a given switch, `ocaml-platform` does the following:
-- First, it checks which tools are already available in the local binary repo, and which need to be built
-- Then, if needed, it creates the sandbox switch, builds the tools it needs to build, and creates a package in the local binary repository for each of them.
+- First, it finds for each tool the latest version compatible with the `ocaml` version of the switch
+- Then, it checks which tools have their version already available in the local binary repo, and which tools need to be built,
+- If needed, it creates the sandbox switch, to builds the tools it needs to build, and add to the local repository the new packages.
 - Finally, it installs all tools from the local binary repository.
 
 Note that this mechanism makes `ocaml-platform` fully integrated with `opam`.
