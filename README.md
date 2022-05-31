@@ -59,9 +59,9 @@ Under the hood, `ocaml-platform` uses several mechanisms to install and cache th
 
 The sandbox switch is a switch in which the tools will be compiled. The idea of having a separate switch is that the dependencies of the development tools should not interfere with the dependencies of your project.
 
-When all tools have been built, for each tool, the files to be installed (except for the libraries part) will be grouped in an opam package to be installed in the current switch.
+The platform tools are normally installed into the sandbox switch. Then, the installed files, except for the libraries, are grouped into new opam packages in the local binary repository (see below).
 
-The opam package is then put in a local "binary" repository, that acts as a cache and as a way for `opam` to install it.
+The libraries are left out to get rid of transitive dependencies, which would defeat the goal of not interfering with the dependencies of the project.
 
 ### The local binary opam repository
 
