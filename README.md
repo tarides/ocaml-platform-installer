@@ -53,17 +53,17 @@ To run the test, see the [README](https://github.com/tarides/ocaml-platform/blob
 
 Another disclaimer: the current implementation is a WIP, so what’s under the hood may (or may not) change in the future.
 
-Under the hood, `ocaml-platform` tool uses several mechanisms to install and cache the platform tools.
+Under the hood, `ocaml-platform` uses several mechanisms to install and cache the platform tools.
 
 ### The sandbox switch
 
-The sandbox switch is a switch in which the tools will be compiled. The idea of having a separate switch is that the dependencies of development tools should not interfere with the dependencies of your project.
+The sandbox switch is a switch in which the tools will be compiled. The idea of having a separate switch is that the dependencies of the development tools should not interfere with the dependencies of your project.
 
 When all tools have been built, every file related to the tools except for the libraries will be grouped in an opam package to be installed in the current switch.
 
 The opam package is put in a local "binary" switch.
 
-### The local binary switch
+### The local binary opam repository
 
 As setting up a switch and building all platform tools there is costly in time, they are cached in a local opam repository.
 
@@ -74,8 +74,8 @@ The packages that miss the library compared to the original package have their n
 ### The pipeline
 
 When prompted to install the platform tools, for a given switch, `ocaml-platform` does the following:
-- First, it checks which tools are already available in the local binary repo, and which needs to be built
-- Then, if needed, it creates the sandbox switch, builds the tools it needs to build, and create a package in the local binary repository for each of them.
+- First, it checks which tools are already available in the local binary repo, and which need to be built
+- Then, if needed, it creates the sandbox switch, builds the tools it needs to build, and creates a package in the local binary repository for each of them.
 - Finally, it installs all tools from the local binary repository.
 
 Note that this mechanism makes `ocaml-platform` fully integrated with `opam`.
