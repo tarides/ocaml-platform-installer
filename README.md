@@ -59,17 +59,19 @@ Under the hood, `ocaml-platform` uses several mechanisms to install and cache th
 
 The sandbox switch is a switch in which the tools will be compiled. The idea of having a separate switch is that the dependencies of the development tools should not interfere with the dependencies of your project.
 
-When all tools have been built, every file related to the tools except for the libraries will be grouped in an opam package to be installed in the current switch.
+When all tools have been built, for each tool, the files to be installed (except for the libraries part) will be grouped in an opam package to be installed in the current switch.
 
-The opam package is put in a local "binary" switch.
+The opam package is then put in a local "binary" repository, that acts as a cache and as a way for `opam` to install it.
 
 ### The local binary opam repository
 
-As setting up a switch and building all platform tools there is costly in time, they are cached in a local opam repository.
+As setting up a switch and building all platform tools there is costly in time, they are cached in a local opam repository. This also allows to install the platform tools purely through `opam`.
 
 The packages in this repository consists of pre-compiled packages with no libraries, so they don’t have to be built and their installation consists only of copying files.
 
-The packages that miss the library compared to the original package have their name suffixed with `+bin+platform` to indicate where they come from, and installing the original package (eg to have the library) will replace the platform one. Their version contains the original version as well as the ocaml version they were compiled with, as this may be important for some tools.
+When the original package contains libraries, it differs from the binary package. In this case, the name of the binary package is suffixed with `+bin+platform`, and installing the original package (eg to have the library) will replace the platform one. In any case, the version of a package in the local repository contains both the original version and the ocaml version they were compiled with, as this may be important for some tools.
+
+Note that the repository is enabled by `ocaml-platform` only when it is needed, and disabled afterward, so using `ocaml-platform` should not alter the behaviour of `opam`.
 
 ### The pipeline
 
