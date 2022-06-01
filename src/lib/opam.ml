@@ -30,31 +30,50 @@ module Cmd = struct
 
   let run_gen opam_opts out_f cmd =
     let cmd = t opam_opts cmd in
-    let* result, (_, status) =
-      Result.flatten
-      @@ Bos.OS.File.with_tmp_output "opam-err-log-%s"
-           (fun tmp _ () ->
-             let res = Bos.OS.Cmd.(run_out ~err:(err_file tmp) cmd |> out_f) in
-             let () =
-               let s = Bos.OS.File.read tmp in
-               match s with
-               | Ok "" -> ()
-               | Ok s -> Logs.debug (fun m -> m "%s" s)
-               | Error (`Msg e) ->
-                   Logs.debug (fun m -> m "Impossible to read opam log: %s" e)
-             in
-             res)
-           ()
-    in
-    match status with
-    | `Exited 0 -> Ok result
-    | _ ->
-        Result.errorf "Command '%a' failed: %a" Bos.Cmd.pp cmd
-          Bos.OS.Cmd.pp_status status
+    Result.flatten
+    @@ Bos.OS.File.with_tmp_output "opam-err-log-%s"
+         (fun tmp _ () ->
+           let* result, status, success =
+             Bos.OS.Cmd.(run_out ~err:(err_file tmp) cmd |> out_f)
+           in
+           let () =
+             let s = Bos.OS.File.read tmp in
+             match s with
+             | Ok "" -> ()
+             | Ok s -> Logs.debug (fun m -> m "%s" s)
+             | Error (`Msg e) ->
+                 Logs.debug (fun m -> m "Impossible to read opam log: %s" e)
+           in
+           if success then Ok result
+           else
+             Result.errorf "Command '%a' failed: %a" Bos.Cmd.pp cmd
+               Bos.OS.Cmd.pp_status status)
+         ()
 
-  let run_s opam_opts cmd = run_gen opam_opts Bos.OS.Cmd.out_string cmd
-  let run_l opam_opts cmd = run_gen opam_opts Bos.OS.Cmd.out_lines cmd
-  let run opam_opts cmd = run_gen opam_opts Bos.OS.Cmd.out_null cmd
+  let out_strict out_f out =
+    let+ result, (_, status) = out_f out in
+    let success = match status with `Exited 0 -> true | _ -> false in
+    (result, status, success)
+
+  let run_s opam_opts cmd =
+    run_gen opam_opts (out_strict Bos.OS.Cmd.out_string) cmd
+
+  let run_l opam_opts cmd =
+    run_gen opam_opts (out_strict Bos.OS.Cmd.out_lines) cmd
+
+  let run opam_opts cmd = run_gen opam_opts (out_strict Bos.OS.Cmd.out_null) cmd
+
+  let out_opt out_f out =
+    let+ result, (_, status) = out_f out in
+    match status with
+    | `Exited 0 -> (Some result, status, true)
+    | `Exited 5 -> (None, status, true)
+    | _ -> (None, status, false)
+
+  (** Like [run_s] but handle the "not found" exit status [5] by returning
+      [None]. *)
+  let run_s_opt opam_opts cmd =
+    run_gen opam_opts (out_opt Bos.OS.Cmd.out_string) cmd
 end
 
 let cmd_with_pos_args args cmd =
@@ -62,8 +81,24 @@ let cmd_with_pos_args args cmd =
 
 module Config = struct
   module Var = struct
+    (* TODO: 'opam config' is deprecated in Opam 2.1 in favor of 'opam var'. *)
     let get opam_opts name =
+      (* 2.1: "var" % name *)
       Cmd.run_s opam_opts Bos.Cmd.(v "config" % "var" % name)
+
+    let get_opt opam_opts name =
+      (* 2.1: "var" % name *)
+      Cmd.run_s_opt opam_opts Bos.Cmd.(v "config" % "var" % name)
+
+    let set opam_opts ~global name value =
+      (* 2.1: "var" % "--global" % (name ^ "=" ^ value) *)
+      let verb = if global then "set-global" else "set" in
+      Cmd.run opam_opts Bos.Cmd.(v "config" % verb % name % value)
+
+    let unset opam_opts ~global name =
+      (* 2.1: "var" % "--global" % (name ^ "=") *)
+      let verb = if global then "unset-global" else "unset" in
+      Cmd.run opam_opts Bos.Cmd.(v "config" % verb % name)
   end
 end
 
@@ -71,17 +106,16 @@ module Switch = struct
   let list opam_opts =
     Cmd.run_l opam_opts Bos.Cmd.(v "switch" % "list" % "--short")
 
-  let create ?ocaml_version opam_opts switch_arg =
-    let cmd =
+  let create ~ocaml_version opam_opts switch_name =
+    let invariant_args =
       match ocaml_version with
       | Some ocaml_version ->
-          Bos.Cmd.(
-            v "switch" % "create" % switch_arg
-            % ("ocaml-base-compiler." ^ ocaml_version)
-            % "--no-switch")
-      | None -> Bos.Cmd.(v "switch" % "create" % switch_arg % "--no-switch")
+          Bos.Cmd.(v ("ocaml-base-compiler." ^ ocaml_version))
+      | None -> Bos.Cmd.(v "--empty")
     in
-    Cmd.run opam_opts cmd
+    Cmd.run opam_opts
+      Bos.Cmd.(
+        v "switch" % "create" % "--no-switch" % switch_name %% invariant_args)
 
   let remove opam_opts name =
     Cmd.run_s opam_opts Bos.Cmd.(v "switch" % "remove" % name)

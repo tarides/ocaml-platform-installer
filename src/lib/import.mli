@@ -22,3 +22,6 @@ module Result : sig
   val errorf :
     ('a, Format.formatter, unit, (_, [> `Msg of string ]) t) format4 -> 'a
 end
+
+val ( / ) : Fpath.t -> string -> Fpath.t
+(** Include {!Fpath.(/)} into the main scope. *)
