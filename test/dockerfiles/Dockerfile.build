@@ -9,4 +9,5 @@ RUN opam install -y --deps-only --with-test --with-doc .
 COPY --chown=opam dune* .
 COPY --chown=opam src src
 
-RUN opam exec -- dune build
+RUN opam exec -- dune build -p platform
+RUN opam exec -- sudo dune install --prefix=/usr/local
