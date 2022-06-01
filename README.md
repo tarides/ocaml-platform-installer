@@ -6,13 +6,13 @@ The OCaml Platform represents the best way for developers, both new and old, to 
 
 This repository contains the `ocaml-platform` tool. This tool allows to easily install all the projects of the Platform in a switch and aims at offering a unified workflow to work with the different Platform tools.
 
-## Trying the platform
+## Trying the Platform
 
 Just download and execute the [install script](https://github.com/tarides/ocaml-platform/releases/download/0.0.1-alpha/installer.sh) of the latest release.
 
 The install script simply downloads and installs the suitable version of `ocaml-platform` for your system, as well as `opam` if needed.
 
-You are then able to run `ocaml-platform`. It will install the platform tools in the current switch. Note that the first time the command is run for a given version of ocaml, installing the tools for the switch takes a few minutes.
+You are then able to run `ocaml-platform`. It will install the Platform tools in the current switch. Note that the first time the command is run for a given version of OCaml, installing the tools for the switch takes a few minutes.
 
 If you are an advanced user and want to understand how `ocaml-platform` works under the hood, go directly to the [Under the hood](#whats-under-the-hood) section.
 
@@ -20,8 +20,8 @@ If you are an advanced user and want to understand how `ocaml-platform` works un
 
 The advantages are the following:
 
-- The dependencies of the platform tools, which are only needed for the development, are not mixed with the dependencies of your project.
-- Installing the platform tools is very fast if you have already installed them for the same version of OCaml in another switch.
+- The dependencies of the Platform tools, which are only needed for the development, are not mixed with the dependencies of your project.
+- Installing the Platform tools is very fast if you have already installed them for the same version of OCaml in another switch.
 
 ## Status
 
@@ -35,7 +35,7 @@ The following Platform tools are currently distributed in the OCaml Platform:
 - LSP server: [`ocaml-lsp`](https://github.com/ocaml/ocaml-lsp)
 - Editor helper: [`merlin`](https://github.com/ocaml/merlin)
 
-Note that the following is not yet distributed but is still in the platform:
+Note that the following is not yet distributed but is still in the Platform:
 
 - REPL: [`utop`](https://github.com/ocaml/utop)
 
@@ -82,3 +82,8 @@ When prompted to install the platform tools, for a given switch, `ocaml-platform
 - Finally, it installs all tools from the local binary repository.
 
 Note that this mechanism makes `opam` fully aware of `ocaml-platform`’s installed package.
+
+## Roadmap
+
+You can read a high-level specification for the OCaml Platform [here](./doc/spec.md).
+Our current plan is to release an installer for the Platform tools in sync with OCaml 5.
