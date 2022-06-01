@@ -67,9 +67,8 @@ let main () =
         `Noblank;
         `P "- Editor helper: $(b,merlin)";
         `P
-          "You can install the OCaml \
-           Platform tools in your current $(b,opam) switch by running \
-           $(mname).";
+          "You can install the OCaml Platform tools in your current $(b,opam) \
+           switch by running $(mname).";
         `P
           "For more information on how to get running with OCaml, you can \
            refer to the official Get Up and Running With OCaml guide: \

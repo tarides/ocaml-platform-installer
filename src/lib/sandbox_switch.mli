@@ -4,9 +4,6 @@ type t
 
 val ocaml_version : t -> Ocaml_version.t
 
-val init :
-  Opam.GlobalOpts.t -> ocaml_version:Ocaml_version.t -> (t, 'e) Result.or_msg
-
 val install :
   Opam.GlobalOpts.t ->
   t ->
@@ -23,3 +20,7 @@ val with_sandbox_switch :
   ocaml_version:Ocaml_version.t ->
   (t -> ('a, 'e) Result.or_msg) ->
   ('a, 'e) Result.or_msg
+(** Create a sandbox switch, call the passed function and finally remove the
+    switch. The version of OCaml is the same as the current switch. The
+    [ocaml_version] argument must correspond to the version installed in the
+    current switch. *)
