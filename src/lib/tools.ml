@@ -85,12 +85,12 @@ let best_version_of_tool opam_opts ocaml_version tool =
   Binary_package.binary_name ~ocaml_version ~name:tool.name ~ver
     ~pure_binary:tool.pure_binary
 
-let make_binary_package opam_opts sandbox repo bname tool =
+let make_binary_package opam_opts ~ocaml_version sandbox repo bname tool =
   let { name; pure_binary; _ } = tool in
   Sandbox_switch.install opam_opts sandbox ~pkg:(tool.name, tool.version)
   >>= fun () ->
-  Binary_package.make_binary_package opam_opts sandbox repo bname ~name
-    ~pure_binary
+  Binary_package.make_binary_package opam_opts ~ocaml_version sandbox repo bname
+    ~name ~pure_binary
 
 let install opam_opts tools =
   let binary_repo_path =
@@ -140,7 +140,8 @@ let install opam_opts tools =
           Result.fold_list
             (fun () (tool, bname) ->
               Logs.app (fun m -> m "Building %s..." tool.name);
-              make_binary_package opam_opts sandbox repo bname tool)
+              make_binary_package opam_opts ~ocaml_version sandbox repo bname
+                tool)
             tools_to_build ()))
   >>= fun () ->
   match tools_to_install with

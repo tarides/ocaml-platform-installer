@@ -2,8 +2,6 @@ open Import
 
 type t
 
-val ocaml_version : t -> Ocaml_version.t
-
 val install :
   Opam.GlobalOpts.t ->
   t ->
