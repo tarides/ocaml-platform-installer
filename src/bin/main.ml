@@ -126,6 +126,11 @@ let main () =
         `P "Paul-Elliot Anglès d'Auriac, $(i,https://github.com/panglesd)";
         `P "Sonja Heinze, $(i,https://github.com/pitag-ha)";
         `P "Thibaut Mattio, $(i,https://github.com/tmattio)";
+        `S Manpage.s_see_also;
+        `P
+          "Consult the project repository on \
+           $(i,https://github.com/tarides/ocaml-platform) for more information \
+           on the tool and the Platform.";
       ]
     in
     Cmd.info "ocaml-platform" ~man ~doc ~version:"%%VERSION%%"
