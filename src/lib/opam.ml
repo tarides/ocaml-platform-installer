@@ -55,6 +55,15 @@ module Cmd = struct
     let success = match status with `Exited 0 -> true | _ -> false in
     (result, status, success)
 
+  (** Handle Opam's "not found" exit status, which is [5]. Returns [None]
+      instead of failing in this case. *)
+  let out_opt out_f out =
+    let+ result, (_, status) = out_f out in
+    match status with
+    | `Exited 0 -> (Some result, status, true)
+    | `Exited 5 -> (None, status, true)
+    | _ -> (None, status, false)
+
   let run_s opam_opts cmd =
     run_gen opam_opts (out_strict Bos.OS.Cmd.out_string) cmd
 
@@ -63,21 +72,10 @@ module Cmd = struct
 
   let run opam_opts cmd = run_gen opam_opts (out_strict Bos.OS.Cmd.out_null) cmd
 
-  let out_opt out_f out =
-    let+ result, (_, status) = out_f out in
-    match status with
-    | `Exited 0 -> (Some result, status, true)
-    | `Exited 5 -> (None, status, true)
-    | _ -> (None, status, false)
-
-  (** Like [run_s] but handle the "not found" exit status [5] by returning
-      [None]. *)
+  (** Like [run_s] but handle the "not found" status. *)
   let run_s_opt opam_opts cmd =
     run_gen opam_opts (out_opt Bos.OS.Cmd.out_string) cmd
 end
-
-let cmd_with_pos_args args cmd =
-  List.fold_left (fun acc el -> Bos.Cmd.(acc % el)) cmd args
 
 module Config = struct
   module Var = struct
@@ -188,20 +186,16 @@ module Show = struct
 end
 
 let install opam_opts pkgs =
-  let cmd = cmd_with_pos_args pkgs Bos.Cmd.(v "install") in
-  Cmd.run opam_opts cmd
+  Cmd.run opam_opts Bos.Cmd.(v "install" %% of_list pkgs)
 
 let remove opam_opts pkgs =
-  let cmd = cmd_with_pos_args pkgs Bos.Cmd.(v "remove") in
-  Cmd.run opam_opts cmd
+  Cmd.run opam_opts Bos.Cmd.(v "remove" %% of_list pkgs)
 
 let update opam_opts pkgs =
-  let cmd = cmd_with_pos_args pkgs Bos.Cmd.(v "update" % "--no-auto-upgrade") in
-  Cmd.run opam_opts cmd
+  Cmd.run opam_opts Bos.Cmd.(v "update" % "--no-auto-upgrade" %% of_list pkgs)
 
 let upgrade opam_opts pkgs =
-  let cmd = cmd_with_pos_args pkgs Bos.Cmd.(v "upgrade") in
-  Cmd.run opam_opts cmd
+  Cmd.run opam_opts Bos.Cmd.(v "upgrade" %% of_list pkgs)
 
 let root =
   Bos.OS.Env.var "OPAMROOT" |> Option.map Fpath.v
