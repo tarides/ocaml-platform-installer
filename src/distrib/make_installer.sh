@@ -95,5 +95,5 @@ fi
 }
 
 # Now that we know the whole script has downloaded, run it.
-_ "$0" "$@"
+_ "\$0" "\$@"
 EOF
