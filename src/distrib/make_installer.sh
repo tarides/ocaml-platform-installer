@@ -6,14 +6,13 @@ set -xeuo pipefail
 
 cat <<EOF
 #/usr/bin/env bash
+set -xeuo pipefail
 
 # We wrap the entire script in a big function which we only call at the very end, in order to
 # protect against the possibility of the connection dying mid-script. This protects us against
 # the problem described in this blog post:
 #   https://archive.ph/xvQVA
 _() {
-
-set -xeuo pipefail
 
 PREFIX=\${PREFIX:-/usr/local}
 
