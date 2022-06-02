@@ -109,7 +109,7 @@ let main () =
              costly in time, they are cached in a local opam repository. This \
              also allows to install the platform tools purely through \
              $(b,opam). The packages in this repository consists of \
-             pre-compiled packages with no libraries, so they don’t have to be \
+             pre-compiled packages with no libraries, so they don't have to be \
              built and their installation consists only of copying files. When \
              the original package contains libraries, it differs from the \
              binary package. In this case, the name of the binary package is \
@@ -132,7 +132,7 @@ let main () =
              tools it needs to build, and add to the local repository the new \
              packages. - Finally, it installs all tools from the local binary \
              repository. Note that this mechanism makes $(b,opam) fully aware \
-             of $(mname)’s installed package." );
+             of $(mname)'s installed package." );
         `S Manpage.s_authors;
         `P "Jules Aguillon, $(i,https://github.com/Julow)";
         `P "Paul-Elliot Anglès d'Auriac, $(i,https://github.com/panglesd)";

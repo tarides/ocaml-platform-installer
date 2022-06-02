@@ -49,9 +49,9 @@ git clone git@github.com:tarides/ocaml-platform.git
 
 To run the test, see the [README](https://github.com/tarides/ocaml-platform/blob/main/test/README.md).
 
-## What’s under the hood
+## What's under the hood
 
-Another disclaimer: the current implementation is a WIP, so what’s under the hood may (or may not) change in the future.
+Another disclaimer: the current implementation is a WIP, so what's under the hood may (or may not) change in the future.
 
 Under the hood, `ocaml-platform` uses several mechanisms to install and cache the platform tools.
 
@@ -67,7 +67,7 @@ The libraries are left out to get rid of transitive dependencies, which would de
 
 As setting up a switch and building all platform tools there is costly in time, they are cached in a local opam repository. This also allows to install the platform tools purely through `opam`.
 
-The packages in this repository consists of pre-compiled packages with no libraries, so they don’t have to be built and their installation consists only of copying files.
+The packages in this repository consists of pre-compiled packages with no libraries, so they don't have to be built and their installation consists only of copying files.
 
 When the original package contains libraries, it differs from the binary package. In this case, the name of the binary package is suffixed with `+bin+platform`, and installing the original package (eg to have the library) will replace the platform one. In any case, the version of a package in the local repository contains both the original version and the ocaml version they were compiled with, as this may be important for some tools.
 
@@ -81,7 +81,7 @@ When prompted to install the platform tools, for a given switch, `ocaml-platform
 - If needed, it creates the sandbox switch, to builds the tools it needs to build, and add to the local repository the new packages.
 - Finally, it installs all tools from the local binary repository.
 
-Note that this mechanism makes `opam` fully aware of `ocaml-platform`’s installed package.
+Note that this mechanism makes `opam` fully aware of `ocaml-platform's installed package.
 
 ## Roadmap
 
