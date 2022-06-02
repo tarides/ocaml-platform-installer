@@ -33,5 +33,3 @@ module Result = struct
 
   let errorf fmt = Format.kasprintf (fun msg -> Error (`Msg msg)) fmt
 end
-
-let ( / ) = Fpath.( / )

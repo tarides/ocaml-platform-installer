@@ -35,6 +35,7 @@ let compiler_suffixes = [ ""; ".opt"; ".byte" ]
 (** [parent_prefix] is the path to the current switch and [sandbox_prefix] of
     the newly created sandbox switch. *)
 let symlink_parent_compiler parent_prefix sandbox_prefix =
+  let ( / ) = Fpath.( / ) in
   let parent_prefix = parent_prefix / "bin"
   and sandbox_prefix = sandbox_prefix / "bin" in
   let* _ = OS.Dir.create ~path:false sandbox_prefix in
@@ -49,7 +50,9 @@ let symlink_parent_compiler parent_prefix sandbox_prefix =
         compiler_suffixes ())
     compiler_tools ()
 
-let set_var_sys_ocaml_version opam_opts ~ocaml_version f =
+(** The [ocaml-system] package requires this option to be set to the right
+    version of OCaml to be installable (it has a solver constraint on it). *)
+let with_var_sys_ocaml_version opam_opts ~ocaml_version f =
   let var = "sys-ocaml-version" and global = true in
   let* prev_value = Opam.Config.Var.get_opt opam_opts var in
   let restore_var () =
@@ -74,7 +77,7 @@ let init opam_opts ~ocaml_version =
       Logs.info (fun l -> l "Creating switch %s to use for tools" sw);
       let* () = Opam.Switch.create ~ocaml_version:None opam_opts sw in
       let* () = symlink_parent_compiler parent_prefix prefix in
-      set_var_sys_ocaml_version opam_opts ~ocaml_version (fun () ->
+      with_var_sys_ocaml_version opam_opts ~ocaml_version (fun () ->
           Opam.install sandbox_opts [ "ocaml-system" ]))
   in
   Ok { sandbox_opts; switch_name = sw; prefix }
@@ -84,11 +87,11 @@ let remove opam_opts t = Opam.Switch.remove opam_opts t.switch_name
 let pkg_to_string (pkg_name, pkg_ver) =
   match pkg_ver with None -> pkg_name | Some ver -> pkg_name ^ "." ^ ver
 
-let install _ t ~pkg =
+let install _opam_opts t ~pkg =
   let pkg = pkg_to_string pkg in
   Opam.install t.sandbox_opts [ pkg ]
 
-let list_files _ t ~pkg =
+let list_files _opam_opts t ~pkg =
   let+ files = Opam.Show.list_files t.sandbox_opts pkg in
   List.map Fpath.v files
 
