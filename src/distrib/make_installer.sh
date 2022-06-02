@@ -8,6 +8,12 @@ cat <<EOF
 #/usr/bin/env bash
 set -xeuo pipefail
 
+# We wrap the entire script in a big function which we only call at the very end, in order to
+# protect against the possibility of the connection dying mid-script. This protects us against
+# the problem described in this blog post:
+#   https://archive.ph/xvQVA
+_() {
+
 PREFIX=\${PREFIX:-/usr/local}
 
 targetos=\$(uname -s | tr '[:upper:]' '[:lower:]' || true)
@@ -84,4 +90,9 @@ install -m755 bin/* "\$PREFIX/bin"
 if ! [[ -e \$PREFIX/bin/opam ]]; then
   install_opam
 fi
+
+}
+
+# Now that we know the whole script has downloaded, run it.
+_ "\$0" "\$@"
 EOF
