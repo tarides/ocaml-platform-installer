@@ -81,7 +81,7 @@ When prompted to install the platform tools, for a given switch, `ocaml-platform
 - If needed, it creates the sandbox switch, to builds the tools it needs to build, and add to the local repository the new packages.
 - Finally, it installs all tools from the local binary repository.
 
-Note that this mechanism makes `opam` fully aware of `ocaml-platform's installed package.
+Note that this mechanism makes `opam` fully aware of `ocaml-platform`'s installed package.
 
 ## Roadmap
 
