@@ -8,4 +8,4 @@ COPY test/tests/small-project.sh .
 
 RUN bash small-project.sh
 
-COPY --from=base /home/opam/ocaml-platform/_build/default/src/bin/main.exe /usr/local/bin/ocaml-platform
+COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform

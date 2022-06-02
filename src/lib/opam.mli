@@ -10,7 +10,18 @@ end
 
 module Config : sig
   module Var : sig
-    val get : GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
+    val get : GlobalOpts.t -> string -> (string, 'e) Result.or_msg
+    val get_opt : GlobalOpts.t -> string -> (string option, 'e) Result.or_msg
+
+    val set :
+      GlobalOpts.t ->
+      global:bool ->
+      string ->
+      string ->
+      (unit, 'e) Result.or_msg
+
+    val unset :
+      GlobalOpts.t -> global:bool -> string -> (unit, 'e) Result.or_msg
   end
 end
 
@@ -18,10 +29,12 @@ module Switch : sig
   val list : GlobalOpts.t -> (string list, [> Rresult.R.msg ]) result
 
   val create :
-    ?ocaml_version:string ->
+    ocaml_version:string option ->
     GlobalOpts.t ->
     string ->
     (unit, [> `Msg of string ]) result
+  (** When [ocaml_version] is [None], create a switch with no compiler
+      installed. *)
 
   val remove : GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
 end

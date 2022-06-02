@@ -5,11 +5,4 @@
  (flags
   (:standard
    (:include ../static-linking-flags/flags)))
- (libraries
-  platform
-  cmdliner
-  logs
-  logs.fmt
-  logs.cli
-  fmt.cli
-  fmt.tty))
+ (libraries platform cmdliner logs logs.fmt logs.cli fmt.cli fmt.tty))
