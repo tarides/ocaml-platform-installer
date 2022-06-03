@@ -2,9 +2,14 @@ open Bos_setup
 open Import
 
 module GlobalOpts : sig
-  type t = { root : Fpath.t; switch : string option }
+  type t = {
+    root : Fpath.t;
+    switch : string option;  (** Whether to pass the [--switch] option. *)
+    env : string String.map option;
+        (** Environment to use when calling commands. *)
+  }
 
-  val v : root:Fpath.t -> ?switch:string -> unit -> t
+  val v : root:Fpath.t -> ?switch:string -> ?env:string String.map -> unit -> t
   val default : t
 end
 
