@@ -20,6 +20,10 @@ jobs:
             runAllTests: false
       fail-fast: false
     runs-on: ubuntu-latest
+
+    env:
+      OCAMLPLATFORM_PLATFORM: ${{ matrix.platform.name }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -38,28 +42,37 @@ jobs:
           driver: docker
 
       - name: Build
-        run: OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ;./test/run_test.sh
-        env:
-          OCAMLPLATFORM_PLATFORM: ${{ matrix.platform.name }}
+        run: ./test/run_test.sh
 
       - name: Check images
         run: docker image ls
 
-      - name: Test install
-        if: ${{ matrix.platform.name == 'linux/amd64' }}
-        run: OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh install
+      - name: "Test: install"
+        if: ${{ matrix.runAllTests }}
+        run: ./test/run_test.sh install
 
-      - name: Test version
-        if: ${{ matrix.platform.name == 'linux/amd64' }}
-        run: OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh version
+      - name: "Test: version"
+        if: ${{ matrix.runAllTests }}
+        run: ./test/run_test.sh version
 
-      - name: Test odoc
-        if: ${{ matrix.platform.name == 'linux/amd64' }}
-        run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh small-project install-in-small-project odoc
+      - name: "Test: install-in-small-project"
+        run: ./test/run_test.sh small-project install-in-small-project
 
-      - name: Test ocamlformat
-        if: ${{ matrix.platform.name == 'linux/amd64' }}
-        run:  OCAMLPLATFORM_PLATFORM=${{ matrix.platform.name }} ; export OCAMLPLATFORM_PLATFORM ; ./test/run_test.sh small-project install-in-small-project ocamlformat
+      - name: "Test: odoc"
+        if: ${{ matrix.runAllTests }}
+        run: ./test/run_test.sh odoc
+
+      - name: "Test: ocamlformat"
+        if: ${{ matrix.runAllTests }}
+        run: ./test/run_test.sh ocamlformat
+
+      - name: "Test: reinstall_cached"
+        if: ${{ matrix.runAllTests }}
+        run: ./test/run_test.sh reinstall_cached
+
+      - name: "Test: reinstall_ocamlformat"
+        if: ${{ matrix.runAllTests }}
+        run: ./test/run_test.sh reinstall_ocamlformat
 
       - name: Build release tarball
         run: |
