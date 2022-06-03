@@ -75,6 +75,7 @@ jobs:
         run: ./test/run_test.sh reinstall_ocamlformat
 
       - name: Build release tarball
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           mkdir -p release; chmod a+rw release;
           docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release \
@@ -86,6 +87,7 @@ jobs:
             opam exec -- bash src/distrib/release.sh
 
       - name: upload archives
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v3
         with:
           name: archives
@@ -114,6 +116,7 @@ jobs:
         run: opam install --deps-only --with-test --with-doc -y .
 
       - name: Build release tarball
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           mkdir -p release;
           export OUTPUT=$PWD/release;
@@ -123,6 +126,7 @@ jobs:
           opam exec -- bash src/distrib/release.sh
 
       - name: upload archives
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v3
         with:
           name: archives
