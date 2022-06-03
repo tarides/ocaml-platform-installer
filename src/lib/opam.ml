@@ -1,10 +1,15 @@
+open Bos_setup
 open Import
 open Result.Syntax
 
 module GlobalOpts = struct
-  type t = { root : Fpath.t; switch : string option }
+  type t = {
+    root : Fpath.t;
+    switch : string option;
+    env : string String.map option;
+  }
 
-  let v ~root ?switch () = { root; switch }
+  let v ~root ?switch ?env () = { root; switch; env }
 
   let default =
     let root =
@@ -34,7 +39,8 @@ module Cmd = struct
     @@ Bos.OS.File.with_tmp_output "opam-err-log-%s"
          (fun tmp _ () ->
            let* result, status, success =
-             Bos.OS.Cmd.(run_out ~err:(err_file tmp) cmd |> out_f)
+             Bos.OS.Cmd.(
+               run_out ?env:opam_opts.env ~err:(err_file tmp) cmd |> out_f)
            in
            let () =
              let s = Bos.OS.File.read tmp in
