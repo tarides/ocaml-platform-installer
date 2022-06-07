@@ -16,12 +16,6 @@ _() {
 
 PREFIX=\${PREFIX:-/usr/local}
 
-targetos=\$(uname -s | tr '[:upper:]' '[:lower:]' || true)
-case \$targetos in
-  "darwin") static_targetos=macos; targetos=macos ;;
-  *) static_targetos=linux ;;
-esac
-
 targetarch=\$(uname -m || echo unknown)
 # Taken from Opam's installer
 case \$targetarch in
@@ -32,7 +26,18 @@ case \$targetarch in
   *armv*) targetarch="armhf" ;;
 esac
 
-archive=ocaml-platform-$VERSION-\$static_targetos-\$targetarch.tar
+targetos=\$(uname -s | tr '[:upper:]' '[:lower:]' || true)
+case \$targetos in
+  "darwin")
+    static_targetos=macos
+    targetos=macos
+    # Distribute the x86_64 static binary to arm64 users too.
+    static_targetarch=x86_64
+    ;;
+  *) static_targetos=linux; static_targetarch=\$targetarch ;;
+esac
+
+archive=ocaml-platform-$VERSION-\$static_targetos-\$static_targetarch.tar
 
 case \$archive in
 $(
