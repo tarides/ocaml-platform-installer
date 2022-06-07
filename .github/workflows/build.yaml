@@ -64,12 +64,14 @@ jobs:
       - name: Build release tarball
         run: |
           mkdir -p release; chmod a+rw release;
+          docker buildx build --platform ${{ matrix.platform.name }} --load \
+            -t ocaml-platform-release-${{ matrix.platform.name }} .
           docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release \
             -e VERSION=$GITHUB_REF_NAME \
             -e TARGETOS=linux \
             -e TARGETARCH=${{ matrix.platform.target_arch }} \
             -e OUTPUT=/release \
-            ocaml-platform-build-${{ matrix.platform.name }} \
+            ocaml-platform-release-${{ matrix.platform.name }} \
             opam exec -- bash src/distrib/release.sh
 
       - name: upload archives
