@@ -8,13 +8,23 @@ This repository contains the `ocaml-platform` tool. This tool allows to easily i
 
 ## Trying the Platform
 
-Just download and execute the [install script](https://github.com/tarides/ocaml-platform/releases/download/0.0.1-alpha/installer.sh) of the latest release.
+To install the `ocaml-platform` tool, run the installer script as `root`:
 
-The install script simply downloads and installs the suitable version of `ocaml-platform` for your system, as well as `opam` if needed.
+```sh
+sudo bash < <(curl -L https://github.com/tarides/ocaml-platform/releases/latest/download/installer.sh)
+```
 
-You are then able to run `ocaml-platform`. It will install the Platform tools in the current switch. Note that the first time the command is run for a given version of OCaml, installing the tools for the switch takes a few minutes.
+Don't hesitate to have a look at what the script does.
+The script will install a static binary into `/usr/local/bin/ocaml-platform` and `opam` if it isn't already installed.
+Currently, only linux (both amd64 and arm64) and macos (only amd64) are supported. Macos arm64 requires Rosetta to be installed. We plan on adding more targets soon.
 
-If you are an advanced user and want to understand how `ocaml-platform` works under the hood, go directly to the [Under the hood](#whats-under-the-hood) section.
+Then install the Platform tools inside your set opam switch:
+
+```
+ocaml-platform
+```
+
+If the tools aren't cached yet, this needs to build OCaml itself and the Platform tools, which takes a few minutes. To understand how `ocaml-platform` works under the hood, go directly to the [Under the hood](#whats-under-the-hood) section.
 
 ### The advantages of using `ocaml-platform`
 
