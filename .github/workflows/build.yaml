@@ -65,6 +65,7 @@ jobs:
         run: |
           mkdir -p release; chmod a+rw release;
           docker buildx build --platform ${{ matrix.platform.name }} --load \
+            -f src/distrib/release.Dockerfile \
             -t ocaml-platform-release-${{ matrix.platform.name }} .
           docker run --platform ${{ matrix.platform.name }} -v $PWD/release:/release \
             -e VERSION=$GITHUB_REF_NAME \
