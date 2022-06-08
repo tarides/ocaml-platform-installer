@@ -6,7 +6,7 @@ set -xeuo pipefail
 
 cat <<EOF
 #/usr/bin/env bash
-set -xeuo pipefail
+set -euo pipefail
 
 # We wrap the entire script in a big function which we only call at the very end, in order to
 # protect against the possibility of the connection dying mid-script. This protects us against
@@ -70,27 +70,38 @@ install_opam ()
     opam-2.1.2-x86_64-macos)    sha512=5ec63f3e4e4e93decb7580d0a114d3ab5eab49baea29edd80c8b4c86b7ab5224e654035903538ef4b63090ab3c2967d6efcc46bf0e8abf239ecc3e04ad7304e2 ;;
     opam-2.1.2-x86_64-openbsd)  sha512=7c16d69c3bb655a149511218663aebdca54f9dd4346f8e4770f2699ae9560651ac242eb7f7aa94b21ad1b579bd857143b6f1ef98b0a53bd3c7047f13fcf95219 ;;
     *)
-      echo "Cannot install opam for \$targetos \$targetarch. Please obtain it at https://opam.ocaml.org/" >&2
+      echo "Cannot install opam for \$targetos \$targetarch." >&2
+      echo "Opam is required to setup the platform. Please install it via your package manager or obtain it at https://opam.ocaml.org/" >&2
+      echo "Once Opam is installed, run 'ocaml-platform'." >&2
       exit 1
       ;;
   esac
+
+  echo "=> Download \$opam_bin"
   download opam "\$opam_base_url/\$opam_bin"
-  sha512sum --check - <<<"\$sha512 opam"
+  sha512sum --check --quiet - <<<"\$sha512 opam"
+
+  echo "=> Install into \$PREFIX/bin"
   install -m755 "opam" "\$PREFIX/bin"
 }
 
 cd "\$(mktemp -d)"
 
+echo "=> Download \$archive" >&2
 download "\$archive" "$ARCHIVES_URL/\$archive"
-sha512sum --check - <<<"\$sha512 \$archive"
+sha512sum --check --quiet - <<<"\$sha512 \$archive"
 tar xf "\$archive"
+
+echo "=> Install into \$PREFIX/bin"
 install -m755 bin/* "\$PREFIX/bin"
 
 # Install Opam if necessary
 if ! [[ -e \$PREFIX/bin/opam ]]; then
+  echo "Opam is not installed, installing."
   install_opam
 fi
 
+echo "Installation is done. Please run 'ocaml-platform' to setup the platform."
 }
 
 # Now that we know the whole script has downloaded, run it.
