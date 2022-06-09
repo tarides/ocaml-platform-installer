@@ -5,9 +5,10 @@ open Result.Syntax
 type t = {
   sandbox_opts : Opam.GlobalOpts.t;
       (** Opam options to use when running command targeting the switch. *)
-  switch_name : string;
   prefix : Fpath.t;
       (** Root directory of the switch, containing [bin/], [lib/], etc.. *)
+  sandbox_root : Fpath.t;
+      (** The directory in which the sandbox switch has been created. *)
   compiler_path : Fpath.t;
       (** A folder containing symlinks to the compiler tools. Created during
           [init] and removed during [deinit]. *)
@@ -58,6 +59,20 @@ let make_compiler_path parent_prefix =
   in
   compiler_path
 
+(** The [switch] field will be passed with [--switch] and [env] is used to set
+    the [PATH] variable. *)
+let make_sandbox_opts opam_opts ~compiler_path ~sandbox_root =
+  let+ env =
+    let+ env = OS.Env.current () in
+    let path =
+      match String.Map.find "PATH" env with Some p -> p | None -> ""
+    in
+    let path = Fpath.to_string compiler_path ^ ":" ^ path in
+    String.Map.add "PATH" path env
+  in
+  let switch = Some (Fpath.to_string sandbox_root) in
+  { opam_opts with Opam.GlobalOpts.switch; env = Some env }
+
 (** The [ocaml-system] package requires this option to be set to the right
     version of OCaml to be installable (it has a solver constraint on it). *)
 let with_var_sys_ocaml_version opam_opts ~ocaml_version f =
@@ -74,41 +89,35 @@ let with_var_sys_ocaml_version opam_opts ~ocaml_version f =
 
 let init opam_opts ~ocaml_version =
   let ocaml_version = Ocaml_version.to_string ocaml_version in
-  let* all_sw = Opam.Switch.list opam_opts in
-  let sw = Fmt.str "opam-tools-%s" ocaml_version in
+  (* Directory in which to create the switch. *)
+  let* sandbox_root = OS.Dir.tmp "ocaml-platform-sandbox-%s" in
   let* compiler_path =
     let* parent_prefix = Opam.Config.Var.get opam_opts "prefix" in
     make_compiler_path (Fpath.v parent_prefix)
   in
   let* sandbox_opts =
-    (* The [switch] field will be passed with [--switch] and [env] is used to
-       set the [PATH] variable. *)
-    let+ env =
-      let+ env = OS.Env.current () in
-      let path =
-        match String.Map.find "PATH" env with Some p -> p | None -> ""
-      in
-      let path = Fpath.to_string compiler_path ^ ":" ^ path in
-      String.Map.add "PATH" path env
+    make_sandbox_opts opam_opts ~compiler_path ~sandbox_root
+  in
+  let* () =
+    Logs.info (fun l -> l "Creating sandbox switch for building the tools");
+    let* () =
+      Opam.Switch.create ~ocaml_version:None opam_opts
+        (Fpath.to_string sandbox_root)
     in
-    { opam_opts with switch = Some sw; env = Some env }
+    with_var_sys_ocaml_version opam_opts ~ocaml_version (fun () ->
+        Opam.install sandbox_opts [ "ocaml-system" ])
   in
   let* prefix = Opam.Config.Var.get sandbox_opts "prefix" >>| Fpath.v in
-  let* () =
-    if List.exists (( = ) sw) all_sw then Ok ()
-    else (
-      Logs.info (fun l -> l "Creating switch %s to use for tools" sw);
-      let* () = Opam.Switch.create ~ocaml_version:None opam_opts sw in
-      with_var_sys_ocaml_version opam_opts ~ocaml_version (fun () ->
-          Opam.install sandbox_opts [ "ocaml-system" ]))
-  in
-  Ok { sandbox_opts; switch_name = sw; prefix; compiler_path }
+  Ok { sandbox_opts; sandbox_root; prefix; compiler_path }
 
 let deinit opam_opts t =
-  (* Ignore errors, don't stop deiniting. *)
-  ignore (Opam.Switch.remove opam_opts t.switch_name);
-  (* Deleting [compiler_path] is not strictly necessary, it will also be done at
-     [at_exit]. *)
+  (* Remove the sandbox switch from Opam's state. It's not a big deal if this
+     fails or is never run, Opam will cleanup its state the next time it does a
+     read-write operation. *)
+  ignore (Opam.Switch.remove opam_opts (Fpath.to_string t.sandbox_root));
+  (* Deleting temporary directories is not strictly necessary, it will also be
+     done at [at_exit]. *)
+  ignore (OS.Dir.delete ~recurse:true t.sandbox_root);
   ignore (OS.Dir.delete ~recurse:true t.compiler_path);
   ()
 
