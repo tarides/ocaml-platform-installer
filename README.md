@@ -35,7 +35,7 @@ The advantages are the following:
 
 ## Status
 
-The OCaml Platform tools are defined by the "Active" and "Incubate" projects listed here. Each element of the platform lives at a different point in the lifecycle of being a Platform tool. Some "Incubate" project might duplicate features that are provided by "Active" projects. The aim of the platform is to limit these duplications as much as possible, and to document the one blessed way to be productive in OCaml.
+The OCaml Platform tools are defined by the "Active" and "Incubate" projects listed [here](https://ocaml.org/docs/platform). Each element of the platform lives at a different point in the lifecycle of being a Platform tool. Some "Incubate" projects might duplicate features that are provided by "Active" projects. The aim of the platform is to limit these duplications as much as possible and to document the one blessed way to be productive in OCaml.
 
 To be more specific, for the first iteration of the OCaml Platform we are considering the following tools (to be revisited later, when the policies for governing how projects can go in and out the platform are ready):
 
