@@ -1,24 +1,25 @@
-# OCaml Platform
+# OCaml Platform Installer
 
 > :bangbang: Disclaimer: This repository is very much a work in progress. Use at your own risk. :wrench:
 
 The OCaml Platform represents the best way for developers, both new and old, to write software in OCaml. It combines the core OCaml compiler with a coherent set of tools, documentation, libraries and testing resources.
 
-This repository contains the `ocaml-platform` tool. This tool allows to easily install all the projects of the Platform in a switch and aims at offering a unified workflow to work with the different Platform tools.
+This repository contains an installer for the OCaml Platform tools named `ocaml-platform`.
+This installer allows to easily install all the projects of the Platform in a switch and aims at offering a simplified workflow to work with the different Platform tools.
 
 ## Trying the Platform
 
-To install the `ocaml-platform` tool, run the installer script as `root`:
+To install the `ocaml-platform` binary, run the installer script as `root`:
 
 ```sh
-sudo bash < <(curl -L https://github.com/tarides/ocaml-platform/releases/latest/download/installer.sh)
+sudo bash < <(curl -L https://github.com/tarides/ocaml-platform-installer/releases/latest/download/installer.sh)
 ```
 
 Don't hesitate to have a look at what the script does.
-The script will install a static binary into `/usr/local/bin/ocaml-platform` and `opam` if it isn't already installed.
-Currently, only linux (both amd64 and arm64) and macos (only amd64) are supported. Macos arm64 requires Rosetta to be installed. We plan on adding more targets soon.
+In a nutshell, the script will install a static binary into `/usr/local/bin/ocaml-platform` as well as the `opam` binary if it isn't already installed.
+Currently, only Linux (both amd64 and arm64) and macOS (only amd64) are supported. macOS arm64 requires Rosetta to be installed. We plan on adding more targets soon.
 
-Then install the Platform tools inside your set opam switch:
+Then, to install the Platform tools inside your opam switch:
 
 ```
 ocaml-platform
@@ -54,10 +55,10 @@ Note that the following is not yet distributed but is still in the Platform:
 To clone the project, you can run:
 
 ```
-git clone git@github.com:tarides/ocaml-platform.git
+git clone git@github.com:tarides/ocaml-platform-installer.git
 ```
 
-To run the test, see the [README](https://github.com/tarides/ocaml-platform/blob/main/test/README.md).
+To run the test, see the [README](https://github.com/tarides/ocaml-platform-installer/blob/main/test/README.md).
 
 ## What's under the hood
 
