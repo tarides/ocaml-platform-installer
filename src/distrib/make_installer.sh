@@ -101,7 +101,7 @@ if ! [[ -e \$PREFIX/bin/opam ]]; then
   install_opam
 fi
 
-echo "Installation is done. Please run 'ocaml-platform' to setup the platform."
+echo "Installation is done. Please run 'ocaml-platform' to install the Platform tools inside your set switch."
 }
 
 # Now that we know the whole script has downloaded, run it.
