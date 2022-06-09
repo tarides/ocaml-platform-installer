@@ -5,7 +5,7 @@
 The OCaml Platform represents the best way for developers, both new and old, to write software in OCaml. It combines the core OCaml compiler with a coherent set of tools, documentation, libraries and testing resources.
 
 This repository contains an installer for the OCaml Platform tools named `ocaml-platform`.
-This installer allows to easily install all the projects of the Platform in a switch and aims at offering a simplified workflow to work with the different Platform tools.
+This installer installs all the tools of the Platform in a switch and aims at offering a simplified workflow to work with the different Platform tools.
 
 ## Trying the Platform
 
