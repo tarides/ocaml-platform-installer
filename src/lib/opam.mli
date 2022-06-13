@@ -73,10 +73,17 @@ module Show : sig
     GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
 end
 
-val install : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
-(** [install atoms] installs the [atoms] into the current local switch. If opam
-    has not been initialised, or if their is no local switch this function will
-    also create those too. *)
+val install :
+  ?log_height:int ->
+  GlobalOpts.t ->
+  string list ->
+  (unit, [> `Msg of string ]) result
+(** [install ~height opam_opts atoms] installs the [atoms] into the current
+    local switch. If opam has not been initialised, or if their is no local
+    switch this function will also create those too.
+
+    [log_height] determines how the output should be displayed. With [None], no
+    output is displayed. With [Some h], the [h] last lines are displayed. *)
 
 val remove : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
 (** [remove atoms] removes the [atoms] from the current local switch. Returns

@@ -36,4 +36,5 @@
   base64
   astring
   bos
+  ANSITerminal
   ppxlib))
