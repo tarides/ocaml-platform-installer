@@ -1,6 +1,8 @@
 open Cmdliner
 open! Platform.Import
 
+let () = Sys.catch_break true
+
 module Common = struct
   [@@@ocaml.warning "-32"]
 
@@ -36,7 +38,10 @@ let main () =
     Fmt_tty.setup_std_outputs ();
     Logs.set_level log_level;
     Logs.set_reporter (Logs_fmt.reporter ~app:Fmt.stdout ());
-    install_platform ()
+    try install_platform ()
+    with Sys.Break ->
+      Logs.app (fun m -> m "User interruption");
+      130
   in
   let info =
     let doc = "Install all OCaml Platform tools in your opam switch." in
