@@ -127,7 +127,7 @@ let pkg_to_string (pkg_name, pkg_ver) =
 
 let install _opam_opts t ~pkg =
   let pkg = pkg_to_string pkg in
-  Opam.install t.sandbox_opts [ pkg ]
+  Opam.install ~log_height:10 t.sandbox_opts [ pkg ]
 
 let list_files _opam_opts t ~pkg =
   let+ files = Opam.Show.list_files t.sandbox_opts pkg in

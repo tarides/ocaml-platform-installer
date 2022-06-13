@@ -28,6 +28,7 @@ depends: [
   "base64"
   "astring"
   "bos"
+  "ANSITerminal"
   "ppxlib"
   "odoc" {with-doc}
 ]
