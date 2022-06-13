@@ -8,7 +8,8 @@ type t = {
   prefix : Fpath.t;
       (** Root directory of the switch, containing [bin/], [lib/], etc.. *)
   sandbox_root : Fpath.t;
-      (** The directory in which the sandbox switch has been created. *)
+      (** The directory in which the sandbox switch has been created. Created
+          during [init] and removed during [deinit]. *)
   compiler_path : Fpath.t;
       (** A folder containing symlinks to the compiler tools. Created during
           [init] and removed during [deinit]. *)
