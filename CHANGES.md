@@ -2,6 +2,7 @@
 
 ## unreleased
 
+- Fix crash while parsing version constraints (#70)
 - Speed-up creating the sandbox switch (#56)
 - Improve the installer script's output (#62)
 - Add a `DETAILS` section to the man page (#54)
