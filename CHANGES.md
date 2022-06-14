@@ -2,6 +2,7 @@
 
 ## unreleased
 
+- Log few sliding lines of opam output when building the tools (#57)
 - Fix duplicate files in binary package archive (#71)
 
 ## 0.1.0 (2022-06-15)
