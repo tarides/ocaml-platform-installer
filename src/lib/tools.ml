@@ -24,16 +24,14 @@ let parse_constraints s =
     quoted @@ take_till (( = ) '"') >>| fun version_string ->
     OV.of_string_exn version_string
   in
-  let is_comparator = function '<' | '>' | '=' -> true | _ -> false in
   let comparator =
-    whitespaced @@ peek_char >>= function
-    | Some c ->
-        if is_comparator c then
-          take_till is_whitespace >>= function
-          | ("<" | "<=" | ">" | ">=" | "=") as e -> return (Some e)
-          | _ -> fail "not a comparator"
-        else return None
-    | None -> return None
+    whitespaced @@ take_till is_whitespace >>= function
+    | "<" -> return `Lt
+    | "<=" -> return `Le
+    | ">" -> return `Gt
+    | ">=" -> return `Ge
+    | "=" -> return `Eq
+    | _ -> fail "not a comparator"
   in
   let constraint_ = both comparator quoted_version in
   let constraints = sep_by (whitespaced @@ char '&') constraint_ in
@@ -42,13 +40,14 @@ let parse_constraints s =
   | Ok a -> Ok a
   | Error m -> Error (`Msg m)
 
-let verify_constraint version constraint_ =
-  match constraint_ with
-  | Some "<=", constraint_version -> OV.compare version constraint_version < 1
-  | Some "<", constraint_version -> OV.compare version constraint_version < 0
-  | Some ">=", constraint_version -> OV.compare version constraint_version > -1
-  | Some ">", constraint_version -> OV.compare version constraint_version > 0
-  | _ -> failwith "impossible"
+let verify_constraint version (op, constraint_version) =
+  let d = OV.compare version constraint_version in
+  match op with
+  | `Le -> d <= 0
+  | `Lt -> d < 0
+  | `Ge -> d >= 0
+  | `Gt -> d > 0
+  | `Eq -> d = 0
 
 let verify_constraints version constraints =
   List.for_all (verify_constraint version) constraints
