@@ -78,12 +78,9 @@ module Cmd = struct
     | Unix.WEXITED 5 -> (None, status, true)
     | _ -> (None, status, false)
 
-  let out_s =
-    ( [],
-      (fun acc line -> line :: acc),
-      fun l -> String.concat ~sep:"\n" @@ List.rev l )
-
-  let out_l = ([], (fun acc line -> line :: acc), fun l -> List.rev l)
+  let out_acc acc line = match String.trim line with "" -> acc | l -> l :: acc
+  let out_s = ([], out_acc, fun l -> String.concat ~sep:"\n" @@ List.rev l)
+  let out_l = ([], out_acc, fun l -> List.rev l)
   let out_ignore = ((), (fun () _line -> ()), fun () -> ())
 
   let run_s ?log_height opam_opts cmd =
