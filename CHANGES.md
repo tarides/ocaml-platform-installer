@@ -4,6 +4,7 @@
 
 ## 0.1.0 (2022-06-15)
 
+- Better handling of user interruption (#69)
 - Fix crash while parsing version constraints (#70)
 - Speed-up creating the sandbox switch (#56)
 - Improve the installer script's output (#62)
