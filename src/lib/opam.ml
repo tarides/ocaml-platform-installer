@@ -53,7 +53,6 @@ module Cmd = struct
       |> List.filter_map (fun s ->
              match String.trim s with "" -> None | s -> Some s)
     in
-    Logs.debug (fun m -> m "%s" @@ String.concat ~sep:"\n" s);
     let s_err = In_channel.input_all ic_err in
     (match s_err with
     | "" -> ()
