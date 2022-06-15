@@ -33,7 +33,7 @@ module Cmd = struct
       v "opam" %% cmd % "--yes" % "-q" % "--color=never" %% switch_cmd
       %% root_cmd)
 
-  let run_gen ?log_height opam_opts out_f cmd =
+  let run_gen ?log_height opam_opts (out_acc, out_wrap) cmd =
     let cmd = t opam_opts cmd in
     let cmd_s = Bos.Cmd.to_string cmd in
     Logs.debug (fun m -> m "Running: %s" cmd_s);
@@ -48,17 +48,13 @@ module Cmd = struct
       |> Array.of_seq
     in
     let ((ic, _, ic_err) as channels) = Unix.open_process_full cmd_s env in
-    let s =
-      Ansi_box.read_and_print_ic ~log_height ic
-      |> List.filter_map (fun s ->
-             match String.trim s with "" -> None | s -> Some s)
-    in
+    let res = Ansi_box.read_and_print_ic ~log_height ic out_acc in
     let s_err = In_channel.input_all ic_err in
     (match s_err with
     | "" -> ()
     | s -> Logs.debug (fun m -> m "Error in execution: %s" s));
     let result, status, success =
-      (s, Unix.close_process_full channels) |> out_f
+      (res, Unix.close_process_full channels) |> out_wrap
     in
     let pp_process_status ppf = function
       | Unix.WEXITED c -> Fmt.pf ppf "exited with %d" c
@@ -70,38 +66,38 @@ module Cmd = struct
       Result.errorf "Command '%a' failed: %a" Bos.Cmd.pp cmd pp_process_status
         status
 
-  let out_strict out_f out =
-    let result, status = out_f out in
+  let out_strict (result, status) =
     let success = match status with Unix.WEXITED 0 -> true | _ -> false in
     (result, status, success)
 
   (** Handle Opam's "not found" exit status, which is [5]. Returns [None]
       instead of failing in this case. *)
-  let out_opt out_f out =
-    let result, status = out_f out in
+  let out_opt (result, status) =
     match status with
     | Unix.WEXITED 0 -> (Some result, status, true)
     | Unix.WEXITED 5 -> (None, status, true)
     | _ -> (None, status, false)
 
+  let out_s =
+    ( [],
+      (fun acc line -> line :: acc),
+      fun l -> String.concat ~sep:"\n" @@ List.rev l )
+
+  let out_l = ([], (fun acc line -> line :: acc), fun l -> List.rev l)
+  let out_ignore = ((), (fun () _line -> ()), fun () -> ())
+
   let run_s ?log_height opam_opts cmd =
-    run_gen ?log_height opam_opts
-      (out_strict (fun (s, status) -> (String.concat ~sep:"\n" s, status)))
-      cmd
+    run_gen ?log_height opam_opts (out_s, out_strict) cmd
 
   let run_l ?log_height opam_opts cmd =
-    run_gen ?log_height opam_opts (out_strict Fun.id) cmd
+    run_gen ?log_height opam_opts (out_l, out_strict) cmd
 
   let run ?log_height opam_opts cmd =
-    run_gen ?log_height opam_opts
-      (out_strict (fun (_, status) -> ((), status)))
-      cmd
+    run_gen ?log_height opam_opts (out_ignore, out_strict) cmd
 
   (** Like [run_s] but handle the "not found" status. *)
   let run_s_opt ?log_height opam_opts cmd =
-    run_gen ?log_height opam_opts
-      (out_opt (fun (s, status) -> (String.concat ~sep:"\n" s, status)))
-      cmd
+    run_gen ?log_height opam_opts (out_s, out_opt) cmd
 end
 
 module Config = struct

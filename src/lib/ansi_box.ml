@@ -1,9 +1,9 @@
 open! Import
 open ANSITerminal
 
-let read_and_print_ic ~log_height ic =
+let read_and_print_ic ~log_height ic (out_init, out_acc, out_finish) =
   let printf = printf [ Foreground Blue ] in
-  let print_history h =
+  let print_history h i =
     match log_height with
     | Some log_height when !isatty Unix.stdout ->
         let rec refresh_history h n =
@@ -19,7 +19,6 @@ let read_and_print_ic ~log_height ic =
               move_cursor 0 n;
               move_bol ()
         in
-        let i = List.length h in
         if i <= log_height then
           match h with
           | [] -> ()
@@ -31,26 +30,28 @@ let read_and_print_ic ~log_height ic =
         flush_all ()
     | _ -> ()
   in
-  let clean history =
+  let clean i =
     match log_height with
     | None -> ()
     | Some log_height ->
-        for _ = 0 to Int.min (List.length history) log_height do
+        for _ = 0 to Int.min i log_height do
           move_bol ();
           erase Eol;
           move_cursor 0 (-1)
         done;
         move_cursor 0 1
   in
-  let rec process_new_line history =
+  let rec process_new_line acc history i =
     let line = try Some (input_line ic) with End_of_file -> None in
     match line with
     | Some line ->
-        let history = line :: history in
-        print_history history;
-        process_new_line history
+        let acc = out_acc acc line
+        and history = line :: history
+        and i = i + 1 in
+        print_history history i;
+        process_new_line acc history i
     | None ->
-        clean history;
-        List.rev history
+        clean i;
+        acc
   in
-  process_new_line []
+  process_new_line out_init [] 0 |> out_finish
