@@ -5,8 +5,7 @@ let read_and_print_ic ~log_height ic =
   let printf = printf [ Foreground Blue ] in
   let print_history h =
     match log_height with
-    | None -> ()
-    | Some log_height ->
+    | Some log_height when !isatty Unix.stdout ->
         let rec refresh_history h n =
           match h with
           | a :: q when n <= log_height ->
@@ -30,6 +29,7 @@ let read_and_print_ic ~log_height ic =
                 @@ min (String.length line) ((fst @@ size ()) - 1))
         else refresh_history h 0;
         flush_all ()
+    | _ -> ()
   in
   let clean history =
     match log_height with
