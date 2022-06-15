@@ -47,33 +47,33 @@ jobs:
       - name: Check images
         run: docker image ls
 
-      - name: "Test: install"
-        if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
-        run: ./test/run_test.sh install
+      # - name: "Test: install"
+      #   if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
+      #   run: ./test/run_test.sh install
 
-      - name: "Test: version"
-        if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
-        run: ./test/run_test.sh version
+      # - name: "Test: version"
+      #   if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
+      #   run: ./test/run_test.sh version
 
-      - name: "Test: install-in-small-project"
-        if: ${{ matrix.target_arch != 'arm64' }}
-        run: ./test/run_test.sh small-project install-in-small-project
+      # - name: "Test: install-in-small-project"
+      #   if: ${{ matrix.target_arch != 'arm64' }}
+      #   run: ./test/run_test.sh small-project install-in-small-project
 
-      - name: "Test: odoc"
-        if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
-        run: ./test/run_test.sh odoc
+      # - name: "Test: odoc"
+      #   if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
+      #   run: ./test/run_test.sh odoc
 
-      - name: "Test: ocamlformat"
-        if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
-        run: ./test/run_test.sh ocamlformat
+      # - name: "Test: ocamlformat"
+      #   if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
+      #   run: ./test/run_test.sh ocamlformat
 
-      - name: "Test: reinstall_cached"
-        if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
-        run: ./test/run_test.sh reinstall_cached
+      # - name: "Test: reinstall_cached"
+      #   if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
+      #   run: ./test/run_test.sh reinstall_cached
 
-      - name: "Test: reinstall_ocamlformat"
-        if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
-        run: ./test/run_test.sh reinstall_ocamlformat
+      # - name: "Test: reinstall_ocamlformat"
+      #   if: ${{ matrix.runAllTests && matrix.target_arch != 'arm64' }}
+      #   run: ./test/run_test.sh reinstall_ocamlformat
 
       - name: Build release tarball
         if: startsWith(github.ref, 'refs/tags/')
