@@ -111,7 +111,7 @@ let install opam_opts tools =
       Opam.Show.installed_versions opam_opts
         (List.map (fun tool -> tool.name) tools)
     in
-    Result.fold_list
+    Result.List.fold_left
       (fun (to_build, to_install) tool ->
         let pkg_version = List.assoc_opt tool.name version_list in
         match pkg_version with
@@ -136,7 +136,7 @@ let install opam_opts tools =
       Logs.app (fun m -> m "Creating a sandbox to build the tools...");
       Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version
         (fun sandbox ->
-          Result.fold_list
+          Result.List.fold_left
             (fun () (tool, bname) ->
               Logs.app (fun m -> m "Building %s..." tool.name);
               make_binary_package opam_opts ~ocaml_version sandbox repo bname

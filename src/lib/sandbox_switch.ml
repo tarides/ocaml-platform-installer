@@ -46,9 +46,9 @@ let make_compiler_path parent_prefix =
   let ( / ) = Fpath.( / ) in
   let parent_prefix = parent_prefix / "bin" in
   let+ () =
-    Result.fold_list
+    Result.List.fold_left
       (fun () fname ->
-        Result.fold_list
+        Result.List.fold_left
           (fun () suffix ->
             let fname = fname ^ suffix in
             let target = parent_prefix / fname

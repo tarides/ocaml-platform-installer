@@ -13,11 +13,15 @@ module Result : sig
     val ( >>= ) : ('a, 'b) t -> ('a -> ('c, 'b) t) -> ('c, 'b) t
   end
 
-  val fold_list :
-    ('acc -> 'a -> ('acc, 'e) result) -> 'acc -> 'a list -> ('acc, 'e) or_msg
+  module List : sig
+    val fold_left :
+      ('acc -> 'a -> ('acc, 'e) result) -> 'acc -> 'a list -> ('acc, 'e) or_msg
+
+    val filter_map :
+      ('a -> ('b option, 'c) or_msg) -> 'a list -> ('b list, 'c) or_msg
+  end
 
   val flatten : (('a, 'b) result, 'b) result -> ('a, 'b) result
-  val iter_until : ('a -> (unit, 'b) result) -> 'a list -> (unit, 'b) result
 
   val errorf :
     ('a, Format.formatter, unit, (_, [> `Msg of string ]) t) format4 -> 'a

@@ -27,10 +27,13 @@ let generate_opam_file original_name pure_binary archive_path ocaml_version =
 let should_remove = Fpath.(is_prefix (v "lib"))
 
 let process_path prefix path =
-  match Fpath.rem_prefix prefix path with
-  | None -> None
-  | Some path ->
-      if should_remove path then None else Some Fpath.(base prefix // path)
+  let+ ex = Bos.OS.File.exists path in
+  if not ex then None
+  else
+    match Fpath.rem_prefix prefix path with
+    | None -> None
+    | Some path ->
+        if should_remove path then None else Some Fpath.(base prefix // path)
 
 (** Binary is already in the sandbox. Add this binary as a package in the local
     repo *)
@@ -43,12 +46,7 @@ let make_binary_package opam_opts ~ocaml_version sandbox repo
   Sandbox_switch.list_files opam_opts sandbox ~pkg:query_name >>= fun paths ->
   let* paths =
     paths
-    |> Result.fold_list
-         (fun acc p ->
-           let+ exist = Bos.OS.Dir.exists p in
-           if exist then acc else p :: acc)
-         []
-    >>| List.filter_map (process_path prefix)
+    |> Result.List.filter_map (process_path prefix)
     >>| List.map Fpath.to_string >>| String.concat ~sep:"\n"
   in
   OS.Cmd.(
