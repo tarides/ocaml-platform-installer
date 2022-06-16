@@ -2,6 +2,8 @@
 
 ## unreleased
 
+- Fix duplicate files in binary package archive (#71)
+
 ## 0.1.0 (2022-06-15)
 
 - Better handling of user interruption (#69)
