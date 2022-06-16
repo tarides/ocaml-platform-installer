@@ -128,7 +128,7 @@ let install opam_opts tools =
               else (tool, bname) :: to_build
             in
             (to_build, Binary_package.name_to_string bname :: to_install))
-      tools ([], [])
+      ([], []) tools
   in
   (match tools_to_build with
   | [] -> Ok ()
@@ -141,7 +141,7 @@ let install opam_opts tools =
               Logs.app (fun m -> m "Building %s..." tool.name);
               make_binary_package opam_opts ~ocaml_version sandbox repo bname
                 tool)
-            tools_to_build ()))
+            () tools_to_build))
   >>= fun () ->
   match tools_to_install with
   | [] ->

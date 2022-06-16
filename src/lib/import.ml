@@ -10,7 +10,7 @@ module Result = struct
     let ( >>= ) x f = Result.bind x f
   end
 
-  let fold_list f lst acc =
+  let fold_list f acc lst =
     let rec loop acc errs = function
       | [] -> if errs = [] then Ok acc else Error (`Multi errs)
       | hd :: tl -> (
