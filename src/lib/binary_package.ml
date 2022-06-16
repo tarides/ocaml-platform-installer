@@ -41,9 +41,15 @@ let make_binary_package opam_opts ~ocaml_version sandbox repo
     Binary_repo.archive_path repo ~unique_name:(name_to_string bname ^ ".tar.gz")
   in
   Sandbox_switch.list_files opam_opts sandbox ~pkg:query_name >>= fun paths ->
-  let paths =
-    List.filter_map (process_path prefix) paths
-    |> List.map Fpath.to_string |> String.concat ~sep:"\n"
+  let* paths =
+    paths
+    |> Result.fold_list
+         (fun acc p ->
+           let+ exist = Bos.OS.Dir.exists p in
+           if exist then acc else p :: acc)
+         []
+    >>| List.filter_map (process_path prefix)
+    >>| List.map Fpath.to_string >>| String.concat ~sep:"\n"
   in
   OS.Cmd.(
     in_string paths

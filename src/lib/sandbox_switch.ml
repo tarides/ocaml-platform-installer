@@ -55,8 +55,8 @@ let make_compiler_path parent_prefix =
             and dst = compiler_path / fname in
             let* exists = OS.File.exists target in
             if exists then OS.Path.symlink ~target dst else Ok ())
-          compiler_suffixes ())
-      compiler_tools ()
+          () compiler_suffixes)
+      () compiler_tools
   in
   compiler_path
 
