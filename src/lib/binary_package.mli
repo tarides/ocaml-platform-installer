@@ -3,29 +3,28 @@
 
 open! Import
 
-type t
+type full_name
 
 val binary_name :
   ocaml_version:Ocaml_version.t ->
   name:string ->
   ver:string ->
   pure_binary:bool ->
-  t
+  full_name
 
-val name_to_string : t -> string
-val name : t -> string
-
-val has_binary_package : Binary_repo.t -> t -> bool
-(** Whether the repository already contain the binary version of a package. *)
+val to_string : full_name -> string
+val name : full_name -> string
+val ver : full_name -> string
+val package : full_name -> Package.full_name
 
 val make_binary_package :
   Opam.GlobalOpts.t ->
   ocaml_version:Ocaml_version.t ->
   Sandbox_switch.t ->
-  Binary_repo.t ->
-  t ->
+  Fpath.t ->
+  full_name ->
   name:string ->
   pure_binary:bool ->
-  (unit, 'e) Result.or_msg
+  (Package.Opam_file.t, 'e) Result.or_msg
 (** Make a binary package from the result of installing a package in the sandbox
     switch. *)
