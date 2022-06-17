@@ -24,8 +24,10 @@ let add_binary_package opam_opts ~ocaml_version sandbox repo bpack
   let archive_path =
     archive_path repo ~unique_name:(Binary_package.to_string bpack ^ ".tar.gz")
   in
-  let* opam =
+  let* install, opam =
     Binary_package.make_binary_package opam_opts ~ocaml_version sandbox
       archive_path bpack ~name:query_name ~pure_binary
   in
-  Repo.add_package opam_opts repo.repo (Binary_package.package bpack) opam
+  Repo.add_package opam_opts repo.repo
+    (Binary_package.package bpack)
+    install opam

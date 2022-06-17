@@ -18,6 +18,7 @@ val add_package :
   Opam.GlobalOpts.t ->
   t ->
   Package.full_name ->
+  Package.Install_file.t option ->
   Package.Opam_file.t ->
   (unit, 'e) OS.result
 
