@@ -4,23 +4,6 @@
 open Bos
 open Import
 
-module Opam_file : sig
-  (** Package description. *)
-
-  type t
-  type cmd = string list
-
-  type dep = string * (string * string) option
-  (** [name * (operator * constraint) option]. *)
-
-  val v :
-    ?install:cmd list ->
-    ?depends:dep list ->
-    ?conflicts:string list ->
-    ?url:Fpath.t ->
-    t
-end
-
 type t
 
 val init : Opam.GlobalOpts.t -> name:string -> Fpath.t -> (t, 'e) Result.or_msg
@@ -28,15 +11,14 @@ val init : Opam.GlobalOpts.t -> name:string -> Fpath.t -> (t, 'e) Result.or_msg
     doesn't exist, it is initialized and registered into Opam. The repository
     isn't added to the selection of any switch. *)
 
-val has_pkg : t -> pkg:string -> ver:string -> bool
+val has_pkg : t -> Package.full_name -> bool
 (** Whether a specific version of a package exists in the repository. *)
 
 val add_package :
   Opam.GlobalOpts.t ->
   t ->
-  pkg:string ->
-  ver:string ->
-  Opam_file.t ->
+  Package.full_name ->
+  Package.Opam_file.t ->
   (unit, 'e) OS.result
 
 val with_repo_enabled :
