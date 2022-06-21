@@ -1,3 +1,4 @@
 (library
  (name platform)
+ (foreign_stubs (language c) (names signal_stubs))
  (libraries astring angstrom ocaml-version bos.setup ANSITerminal))

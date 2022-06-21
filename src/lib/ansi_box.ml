@@ -1,7 +1,15 @@
 open! Import
 open ANSITerminal
 
+external sigwinch : unit -> int = "ocaml_sigwinch"
+
+let sigwinch = sigwinch ()
+
 let read_and_print_ic ~log_height ic (out_init, out_acc, out_finish) =
+  let terminal_size = ref (fst @@ size ()) in
+  Sys.set_signal sigwinch
+    (Sys.Signal_handle
+       (fun i -> if i = sigwinch then terminal_size := fst @@ size () else ()));
   let printf = printf [ Foreground Blue ] in
   let print_history h i =
     match log_height with
@@ -11,7 +19,7 @@ let read_and_print_ic ~log_height ic (out_init, out_acc, out_finish) =
           | a :: q when n <= log_height ->
               erase Eol;
               printf "%s"
-                (String.sub a 0 @@ min (String.length a) ((fst @@ size ()) - 1));
+                (String.sub a 0 @@ min (String.length a) (!terminal_size - 1));
               move_cursor 0 (-1);
               move_bol ();
               refresh_history q (n + 1)
@@ -25,7 +33,7 @@ let read_and_print_ic ~log_height ic (out_init, out_acc, out_finish) =
           | line :: _ ->
               printf "%s\n"
                 (String.sub line 0
-                @@ min (String.length line) ((fst @@ size ()) - 1))
+                @@ min (String.length line) (!terminal_size - 1))
         else refresh_history h 0;
         flush_all ()
     | _ -> ()
