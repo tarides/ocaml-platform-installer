@@ -5,7 +5,12 @@ external sigwinch : unit -> int = "ocaml_sigwinch"
 
 let sigwinch = sigwinch ()
 
-let read_and_print_ic ~log_height ic (out_init, out_acc, out_finish) =
+let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
+  let out_acc_err acc l = l :: acc in
+  let ic = Lwt_io.of_unix_fd (Unix.descr_of_in_channel ic) ~mode:Lwt_io.input
+  and ic_err =
+    Lwt_io.of_unix_fd (Unix.descr_of_in_channel ic_err) ~mode:Lwt_io.input
+  in
   let terminal_size = ref (fst @@ size ()) in
   Sys.set_signal sigwinch
     (Sys.Signal_handle
@@ -49,17 +54,44 @@ let read_and_print_ic ~log_height ic (out_init, out_acc, out_finish) =
         done;
         move_cursor 0 1
   in
-  let rec process_new_line acc history i =
-    let line = try Some (input_line ic) with End_of_file -> None in
-    match line with
-    | Some line ->
-        let acc = out_acc acc line
-        and history = line :: history
-        and i = i + 1 in
-        print_history history i;
-        process_new_line acc history i
-    | None ->
-        clean i;
-        acc
+  let open Lwt.Syntax in
+  let read_line () =
+    let+ l = Lwt_io.read_line_opt ic in
+    (`Std, l)
+  and read_err_line () =
+    let+ l = Lwt_io.read_line_opt ic_err in
+    (`Err, l)
   in
-  process_new_line out_init [] 0 |> out_finish
+  let next_lines promises =
+    let+ lines, promises = Lwt.nchoose_split promises in
+    List.fold_left
+      (fun (lines, promises) res ->
+        match res with
+        | _, None -> (lines, promises)
+        | `Std, Some l -> ((`Std, l) :: lines, read_line () :: promises)
+        | `Err, Some l -> ((`Err, l) :: lines, read_err_line () :: promises))
+      ([], promises) lines
+  in
+  let add_lines h acc acc_err lines =
+    let add_line (acc, acc_err, history) line =
+      match line with
+      | `Std, l -> (out_acc acc l, acc_err, l :: history)
+      | `Err, l -> (acc, out_acc_err acc_err l, l :: history)
+    in
+    List.fold_left add_line (acc, acc_err, h) lines
+  in
+  let rec process_new_line acc acc_err history promises i =
+    let* lines, promises = next_lines promises in
+    let acc, acc_err, history = add_lines history acc acc_err lines in
+    match lines with
+    | [] ->
+        clean i;
+        Lwt.return (acc, acc_err)
+    | _ ->
+        let i = i + List.length lines in
+        print_history history i;
+        process_new_line acc acc_err history promises i
+  in
+  Lwt_main.run
+  @@ process_new_line out_init [] [] [ read_line (); read_err_line () ] 0
+  |> fun (acc, acc_err) -> (out_finish acc, acc_err)

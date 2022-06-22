@@ -48,8 +48,8 @@ module Cmd = struct
       |> Array.of_seq
     in
     let ((ic, _, ic_err) as channels) = Unix.open_process_full cmd_s env in
-    let res = Ansi_box.read_and_print_ic ~log_height ic out_acc in
-    let s_err = In_channel.input_all ic_err in
+    let res, res_err = Ansi_box.read_and_print ~log_height ic ic_err out_acc in
+    let s_err = String.concat ~sep:"\n" res_err in
     (match s_err with
     | "" -> ()
     | s -> Logs.debug (fun m -> m "Error in execution: %s" s));

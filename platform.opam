@@ -29,6 +29,7 @@ depends: [
   "astring"
   "bos"
   "ANSITerminal"
+  "lwt"
   "ppxlib"
   "odoc" {with-doc}
 ]
