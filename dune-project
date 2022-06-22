@@ -37,4 +37,5 @@
   astring
   bos
   ANSITerminal
+  lwt
   ppxlib))

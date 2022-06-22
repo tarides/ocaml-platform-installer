@@ -2,7 +2,7 @@
     code style throughout the project. Let's [open!] this in every module. *)
 
 module Result : sig
-  include module type of Result
+  include module type of Stdlib.Result
 
   type ('a, 'e) or_msg = ('a, ([> `Msg of string | `Multi of 'e list ] as 'e)) t
 
