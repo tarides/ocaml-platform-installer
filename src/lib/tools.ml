@@ -105,7 +105,7 @@ let install opam_opts tools =
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
-  Logs.app (fun m -> m "Inferring tools version...");
+  Logs.app (fun m -> m "* Inferring tools version...");
   let* tools_to_build, tools_to_install =
     let* version_list =
       Opam.Show.installed_versions opam_opts
@@ -116,12 +116,12 @@ let install opam_opts tools =
         let pkg_version = List.assoc_opt tool.name version_list in
         match pkg_version with
         | Some (Some _) ->
-            Logs.info (fun m -> m "%s is already installed" tool.name);
+            Logs.app (fun m -> m "  -> %s is already installed" tool.name);
             Ok (to_build, to_install)
         | _ ->
             let+ bname = best_version_of_tool opam_opts ocaml_version tool in
-            Logs.info (fun m ->
-                m "%s will be installed as %s" tool.name
+            Logs.app (fun m ->
+                m "  -> %s will be installed as %s" tool.name
                   (Binary_package.name_to_string bname));
             let to_build =
               if Binary_package.has_binary_package repo bname then to_build
@@ -133,24 +133,30 @@ let install opam_opts tools =
   (match tools_to_build with
   | [] -> Ok ()
   | _ :: _ ->
-      Logs.app (fun m -> m "Creating a sandbox to build the tools...");
+      Logs.app (fun m -> m "* Creating a sandbox to build the tools...");
       Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version
         (fun sandbox ->
           Result.List.fold_left
             (fun () (tool, bname) ->
-              Logs.app (fun m -> m "Building %s..." tool.name);
+              Logs.app (fun m -> m "  -> Building %s..." tool.name);
               make_binary_package opam_opts ~ocaml_version sandbox repo bname
                 tool)
             () tools_to_build))
   >>= fun () ->
   match tools_to_install with
   | [] ->
-      Logs.app (fun m -> m "All tools are already installed");
+      Logs.app (fun m -> m "  -> All tools are already installed");
       Ok ()
   | _ ->
-      Repo.with_repo_enabled opam_opts (Binary_repo.repo repo) (fun () ->
-          Logs.app (fun m -> m "Installing tools...");
-          Opam.install opam_opts tools_to_install)
+      let+ () =
+        Repo.with_repo_enabled opam_opts (Binary_repo.repo repo) (fun () ->
+            Logs.app (fun m -> m "* Installing tools...");
+            Opam.install ~log_height:10 opam_opts tools_to_install)
+      in
+      Logs.app (fun m ->
+          m
+            "Success. For more information on the installed tools, run \
+             `ocaml-platform --help`")
 
 let find_ocamlformat_version () =
   match OS.File.read_lines (Fpath.v ".ocamlformat") with
