@@ -1,7 +1,7 @@
 open! Import
 open ANSITerminal
 
-external sigwinch : unit -> int = "ocaml_sigwinch"
+external sigwinch : unit -> int option = "ocaml_sigwinch"
 
 let sigwinch = sigwinch ()
 
@@ -11,14 +11,19 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
   and ic_err =
     Lwt_io.of_unix_fd (Unix.descr_of_in_channel ic_err) ~mode:Lwt_io.input
   in
-  let terminal_size = ref (fst @@ size ()) in
-  Sys.set_signal sigwinch
-    (Sys.Signal_handle
-       (fun i -> if i = sigwinch then terminal_size := fst @@ size () else ()));
+  let isatty = !isatty Unix.stdout in
+  let terminal_size = ref (if isatty then fst @@ size () else 0) in
+  Option.iter
+    (fun sigwinch ->
+      Sys.set_signal sigwinch
+        (Sys.Signal_handle
+           (fun i ->
+             if i = sigwinch then terminal_size := fst @@ size () else ())))
+    sigwinch;
   let printf = printf [ Foreground Blue ] in
   let print_history h i =
     match log_height with
-    | Some log_height when !isatty Unix.stdout ->
+    | Some log_height when isatty && Option.is_some sigwinch ->
         let rec refresh_history h n =
           match h with
           | a :: q when n <= log_height ->
