@@ -133,15 +133,19 @@ let install opam_opts tools =
   (match tools_to_build with
   | [] -> Ok ()
   | _ :: _ ->
-      Logs.app (fun m -> m "* Creating a sandbox to build the tools...");
+      Logs.app (fun m -> m "* Building the tools...");
+      Logs.app (fun m -> m "  -> Creating a sandbox...");
       Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version
         (fun sandbox ->
+          let n = List.length tools_to_build in
           Result.List.fold_left
-            (fun () (tool, bname) ->
-              Logs.app (fun m -> m "  -> Building %s..." tool.name);
+            (fun () (i, (tool, bname)) ->
+              Logs.app (fun m ->
+                  m "  -> [%d/%d] Building %s..." (i + 1) n tool.name);
               make_binary_package opam_opts ~ocaml_version sandbox repo bname
                 tool)
-            () tools_to_build))
+            ()
+            (List.mapi (fun i s -> (i, s)) tools_to_build)))
   >>= fun () ->
   match tools_to_install with
   | [] ->
@@ -153,9 +157,10 @@ let install opam_opts tools =
             Logs.app (fun m -> m "* Installing tools...");
             Opam.install ~log_height:10 opam_opts tools_to_install)
       in
+      Logs.app (fun m -> m "  -> All tools installed.");
       Logs.app (fun m ->
           m
-            "Success. For more information on the installed tools, run \
+            "* Success. For more information on the installed tools, run \
              `ocaml-platform --help`")
 
 let find_ocamlformat_version () =
