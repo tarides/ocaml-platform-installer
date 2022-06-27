@@ -73,7 +73,7 @@ module Binary_install_file = struct
         and man = process man in
         Some
           (Package.Install_file.v ~bin ~sbin ~share ~share_root ~etc ~doc ~man
-             ())
+             ~pkg_name ())
 end
 
 type full_name = Package.full_name
@@ -96,8 +96,8 @@ let generate_opam_file original_name bname pure_binary archive_path install
     if install then Some [ [ "cp"; "-pPR"; "."; "%{prefix}%" ] ] else None
   in
   Package.Opam_file.v ?install
-    ~depends:[ ("ocaml", Some ("=", Ocaml_version.to_string ocaml_version)) ]
-    ?conflicts ~url:archive_path ~opam_version:"2.0" ~pkg_name:(name bname)
+    ~depends:[ ("ocaml", [ (`Eq, Ocaml_version.to_string ocaml_version) ]) ]
+    ?conflicts ~url:archive_path ~opam_version:"2.0" ~pkg_name:(name bname) ()
 
 let should_remove = Fpath.(is_prefix (v "lib"))
 

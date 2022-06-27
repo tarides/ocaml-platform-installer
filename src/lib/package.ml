@@ -8,59 +8,85 @@ let to_string { name; ver } = name ^ "." ^ ver
 let name { name; ver = _ } = name
 let ver { name = _; ver } = ver
 
-module FilesGenerator = struct
-  let fpf = Format.fprintf
-  let field ppf name pp_a a = fpf ppf "%s @[<v>%a@]@\n" name pp_a a
-
-  let field_opt ppf name pp_a = function
-    | Some a -> field ppf name pp_a a
-    | None -> ()
-
-  let gen_list pp_a ppf lst =
-    let pp_a ppf a = fpf ppf "@[<hov>%a@]" pp_a a in
-    fpf ppf "[@ %a@ ]" (Format.pp_print_list pp_a) lst
-
-  let gen_string ppf s = fpf ppf "%S" s
-
-  let gen_option pp_a ppf = function
-    | Some op -> fpf ppf " { %a }" pp_a op
-    | None -> ()
-
-  let gen_field_with_opt f_pp_a opt_pp_a ppf (s, opt) =
-    fpf ppf "%a%a" f_pp_a s (gen_option opt_pp_a) opt
-end
-
 module Opam_file = struct
-  open FilesGenerator
-
-  type t = unit Fmt.t
+  type t = OpamParserTypes.FullPos.opamfile
   type cmd = string list
-  type dep = string * (string * string) option
+  type dep = string * ([ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string) list
 
-  let gen_dep =
-    let gen_constraint ppf (op, cons) = fpf ppf "%s %S" op cons in
-    gen_list (gen_field_with_opt gen_string gen_constraint)
+  open OpamParserTypes.FullPos
 
-  let gen_url ppf url = fpf ppf "{@ src: %S@ }" (Fpath.to_string url)
+  let with_pos pelem =
+    let pos = { start = (0, 0); stop = (0, 0); filename = "" } in
+    { pelem; pos }
 
-  let v ?install ?depends ?conflicts ?url ~opam_version ~pkg_name ppf () =
-    field ppf "opam-version:" gen_string opam_version;
-    field ppf "name:" gen_string pkg_name;
-    field_opt ppf "install:" (gen_list (gen_list gen_string)) install;
-    field_opt ppf "depends:" gen_dep depends;
-    field_opt ppf "conflicts:" (gen_list gen_string) conflicts;
-    field_opt ppf "url" gen_url url
+  let variable name value = with_pos @@ Variable (with_pos name, value)
 
-  let fprintf t = t
+  let section kind name items =
+    let section_kind = with_pos kind
+    and section_name = Option.map with_pos name
+    and section_items = with_pos items in
+    with_pos @@ Section { section_kind; section_name; section_items }
+
+  let string s = with_pos (String s)
+  let list l = with_pos @@ List (with_pos l)
+  let option v l = with_pos @@ OpamParserTypes.FullPos.Option (v, with_pos l)
+  let prefix_relop p v = with_pos @@ Prefix_relop (with_pos p, v)
+
+  let v ?install ?depends ?conflicts ?url ~opam_version ~pkg_name () =
+    let file_name = "opam" in
+    let opam_version = variable "opam-version" (string opam_version)
+    and name = variable "name" (string pkg_name)
+    and install =
+      match install with
+      | None -> []
+      | Some install ->
+          [
+            variable "install"
+              (list (List.map (fun e -> list (List.map string e)) install));
+          ]
+    and depends =
+      match depends with
+      | None -> []
+      | Some depends ->
+          [
+            variable "depends"
+              (list
+                 (List.map
+                    (fun (p, c) ->
+                      option (string p)
+                        (List.map
+                           (fun (rel, cstr) -> prefix_relop rel (string cstr))
+                           c))
+                    depends));
+          ]
+    and conflicts =
+      match conflicts with
+      | None -> []
+      | Some conflicts ->
+          [ variable "conflicts" (list (List.map string conflicts)) ]
+    and url =
+      match url with
+      | None -> []
+      | Some url ->
+          let items = [ variable "src" (string (Fpath.to_string url)) ] in
+          [ section "url" None items ]
+    in
+    let file_contents =
+      [ opam_version; name ] @ install @ depends @ conflicts @ url
+    in
+    { OpamParserTypes.FullPos.file_contents; file_name }
+
+  let to_string t = OpamPrinter.FullPos.opamfile t
 end
 
 module Install_file = struct
-  open FilesGenerator
+  open Opam_file
 
-  type t = unit Fmt.t
+  type t = OpamParserTypes.FullPos.opamfile
 
   let v ?lib ?lib_root ?libexec ?libexec_root ?bin ?sbin ?toplevel ?share
-      ?share_root ?etc ?doc ?stublibs ?man ?misc () =
+      ?share_root ?etc ?doc ?stublibs ?man ?misc ~pkg_name () =
+    let of_option o = match o with None -> [] | Some a -> [ string a ] in
     let l =
       [
         ("lib:", lib);
@@ -79,28 +105,19 @@ module Install_file = struct
         ("misc:", misc);
       ]
     in
-    fun ppf () ->
-      List.iter
-        (fun (f, p) ->
-          field_opt ppf f
-            (gen_list (gen_field_with_opt gen_string gen_string))
-            p)
+
+    let file_name = pkg_name ^ ".install"
+    and file_contents =
+      List.map
+        (fun (f, v) ->
+          variable f
+            (list
+               (List.map
+                  (fun (p, c) -> option (string p) (of_option c))
+                  (Option.value ~default:[] v))))
         l
+    in
+    { OpamParserTypes.FullPos.file_contents; file_name }
 
-  (* field_opt ppf "lib:" (gen_list gen_string) lib; *)
-  (* field_opt ppf "lib_root:" (gen_list gen_string) lib_root; *)
-  (* field_opt ppf "libexec:" (gen_list gen_string) libexec; *)
-  (* field_opt ppf "libexec_root:" (gen_list gen_string) libexec_root; *)
-  (* field_opt ppf "bin:" (gen_list gen_string) bin; *)
-  (* field_opt ppf "sbin:" (gen_list gen_string) sbin; *)
-  (* field_opt ppf "toplevel:" (gen_list gen_string) toplevel; *)
-  (* field_opt ppf "share:" (gen_list gen_string) share; *)
-  (* field_opt ppf "share_root:" (gen_list gen_string) share_root; *)
-  (* field_opt ppf "etc:" (gen_list gen_string) etc; *)
-  (* field_opt ppf "doc:" (gen_list gen_string) doc; *)
-  (* field_opt ppf "stublibs:" (gen_list gen_string) stublibs; *)
-  (* field_opt ppf "man:" (gen_list gen_string) man; *)
-  (* field_opt ppf "misc:" (gen_list gen_string) misc *)
-
-  let fprintf t = t
+  let to_string t = OpamPrinter.FullPos.opamfile t
 end
