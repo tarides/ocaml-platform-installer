@@ -13,17 +13,20 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
   in
   let isatty = !isatty Unix.stdout in
   let terminal_size = ref (if isatty then fst @@ size () else 0) in
-  Option.iter
-    (fun sigwinch ->
-      Sys.set_signal sigwinch
-        (Sys.Signal_handle
-           (fun i ->
-             if i = sigwinch then terminal_size := fst @@ size () else ())))
-    sigwinch;
+  let () =
+    Option.iter
+      (fun sigwinch ->
+        Sys.set_signal sigwinch
+          (Sys.Signal_handle
+             (fun i ->
+               if i = sigwinch then terminal_size := fst @@ size () else ())))
+      sigwinch
+  in
+  let ansi_enabled = isatty && Option.is_some sigwinch in
   let printf = printf [ Foreground Blue ] in
   let print_history h i =
     match log_height with
-    | Some log_height when isatty && Option.is_some sigwinch ->
+    | Some log_height when ansi_enabled ->
         let rec refresh_history h n =
           match h with
           | a :: q when n <= log_height ->
@@ -50,14 +53,14 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
   in
   let clean i =
     match log_height with
-    | None -> ()
-    | Some log_height ->
+    | Some log_height when ansi_enabled ->
         for _ = 0 to Int.min i log_height do
           move_bol ();
           erase Eol;
           move_cursor 0 (-1)
         done;
         move_cursor 0 1
+    | _ -> ()
   in
   let open Lwt.Syntax in
   let read_line () =
