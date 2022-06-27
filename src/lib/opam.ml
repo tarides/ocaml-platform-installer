@@ -136,59 +136,102 @@ module Repository = struct
       Bos.Cmd.(v "repository" % "--this-switch" % "remove" % name)
 end
 
-module Show = struct
-  let list_files opam_opts pkg_name =
-    Cmd.run_l opam_opts Bos.Cmd.(v "show" % "--list-files" % pkg_name)
+module Queries = struct
+  let init () =
+    OpamFormatConfig.init ();
+    let root = OpamStateConfig.opamroot () in
+    OpamStateConfig.load_defaults root |> ignore;
+    OpamStateConfig.init ~root_dir:root ()
 
-  let available_versions opam_opts pkg_name =
-    let open Result.Syntax in
-    let+ output =
-      Cmd.run_s opam_opts
-        Bos.Cmd.(v "show" % "-f" % "available-versions" % pkg_name)
+  let latest_version ~metadata_universe ~pkg_universe ~ocaml package =
+    let package = OpamPackage.Name.of_string package in
+    let compatible_ones =
+      OpamPackage.Set.filter
+        (fun pkg ->
+          OpamPackage.Name.equal (OpamPackage.name pkg) package
+          &&
+          let pkg_opam_file = OpamPackage.Map.find pkg metadata_universe in
+          let dependencies = OpamFile.OPAM.depends pkg_opam_file in
+          let env _ = None in
+          OpamFormula.verifies
+            (OpamPackageVar.filter_depends_formula ~env dependencies)
+            ocaml)
+        pkg_universe
     in
-    Astring.String.cuts ~sep:"  " output |> List.rev
+    try Some (OpamPackage.max_version compatible_ones package)
+    with Not_found -> None
 
-  let installed_version opam_opts pkg_name =
-    match
-      Cmd.run_s opam_opts
-        Bos.Cmd.(
-          v "show" % pkg_name % "-f" % "installed-version" % "--normalise")
-    with
-    | Ok "--" -> Ok None
-    | Ok s -> Ok (Some s)
-    | Error e -> Error e
+  let installed_versions pkg_names
+      (sel : OpamTypes.switch_selections) =
+    let installed_pkgs = sel.sel_installed in
+    List.map
+      (fun name ->
+        let version =
+          OpamPackage.package_of_name_opt installed_pkgs
+          @@ OpamPackage.Name.of_string name
+        in
+        (name, version))
+      pkg_names
 
-  let installed_versions opam_opts pkg_names =
-    let parse =
-      let open Angstrom in
-      let is_whitespace = function
-        | '\x20' | '\x0a' | '\x0d' | '\x09' -> true
-        | _ -> false
-      in
-      let whitespace = take_while is_whitespace in
-      let word = whitespace *> take_till is_whitespace in
-      let field f = whitespace *> string f *> word in
-      let parse_double_line = both (field "name") (field "installed-version") in
-      let parse = many parse_double_line in
-      fun s ->
-        match parse_string ~consume:Consume.All parse s with
-        | Ok e -> Ok e
-        | Error e -> Result.errorf "Error in parsing installed versions: %s" e
+  let files_installed_by_pkg pkg_name
+      (switch_state : 'lock OpamStateTypes.switch_state) =
+    let changes_f =
+      OpamPath.Switch.changes switch_state.switch_global.root
+        switch_state.switch
+        (OpamPackage.Name.of_string pkg_name)
     in
-    let* res =
-      Cmd.run_s opam_opts
-        Bos.Cmd.(
-          v "show" %% of_list pkg_names % "-f" % "name,installed-version"
-          % "--normalise")
-    in
-    let+ res = parse res in
-    List.map (function a, "--" -> (a, None) | a, s -> (a, Some s)) res
+    match OpamFile.Changes.read_opt changes_f with
+    | None ->
+        Result.errorf
+          "Something went wrong looking for the files installed by %s" pkg_name
+    | Some changes ->
+        Ok
+          (OpamDirTrack.check
+             (OpamPath.Switch.root switch_state.switch_global.root
+                switch_state.switch)
+             changes
+          |> List.fold_left
+               (fun acc file ->
+                 match file with
+                 | filename, _ -> OpamFilename.to_string filename :: acc)
+               [])
 
-  let depends opam_opts pkg_name =
-    Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "depends:" % pkg_name)
+  let get_pkg_universe (switch_state : 'lock OpamStateTypes.switch_state) =
+    switch_state.available_packages
 
-  let version opam_opts pkg_name =
-    Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "version" % pkg_name)
+  let get_metadata_universe (switch_state : 'lock OpamStateTypes.switch_state) =
+    switch_state.opams
+
+let get_switch = function
+      | None -> OpamStateConfig.get_switch ()
+      | Some dir ->
+          OpamSwitch.of_dirname
+            (Fpath.to_string dir |> OpamFilename.Dir.of_string)
+
+  let with_switch_state ?dir_name f =
+    let switch = get_switch dir_name in
+    OpamGlobalState.with_ `Lock_read (fun global_state ->
+        OpamSwitchState.with_ `Lock_read global_state ~switch
+          (fun switch_state -> f switch_state))
+
+  let with_switch_state_sel ?dir_name f =
+    let switch = get_switch dir_name in
+    OpamGlobalState.with_ `Lock_read (fun global_state ->
+      let sel = OpamSwitchState.load_selections ~lock_kind:`Lock_read global_state switch in
+    f sel)
+
+  let with_virtual_state f =
+    OpamGlobalState.with_ `Lock_read (fun global_state ->
+        OpamRepositoryState.with_ `Lock_read global_state (fun repo_state ->
+            let virtual_state =
+              OpamSwitchState.load_virtual global_state repo_state
+            in
+            f virtual_state))
+end
+
+module Conversions = struct
+  let version_of_pkg pkg =
+    OpamPackage.version pkg |> OpamPackage.Version.to_string
 end
 
 let install opam_opts pkgs =

@@ -36,4 +36,5 @@
   base64
   astring
   bos
-  ppxlib))
+  (opam-state
+   (>= 2.1.2))))
