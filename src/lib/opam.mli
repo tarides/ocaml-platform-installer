@@ -51,26 +51,46 @@ module Repository : sig
   val remove : GlobalOpts.t -> string -> (unit, [> `Msg of string ]) result
 end
 
-module Show : sig
-  val list_files :
-    GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
+module Queries : sig
+  val init : unit -> unit
 
-  val available_versions :
-    GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
+  val files_installed_by_pkg :
+    string ->
+    'lock OpamStateTypes.switch_state ->
+    (string list, [> `Msg of string ]) result
 
-  val installed_version :
-    GlobalOpts.t -> string -> (string option, [> `Msg of string ]) result
+  val get_pkg_universe :
+    'lock OpamStateTypes.switch_state -> OpamTypes.package_set lazy_t
+
+  val get_metadata_universe :
+    'lock OpamStateTypes.switch_state -> OpamFile.OPAM.t OpamTypes.package_map
+
+  val latest_version :
+    metadata_universe:OpamFile.OPAM.t OpamTypes.package_map ->
+    pkg_universe:OpamTypes.package_set ->
+    ocaml:OpamPackage.t ->
+    string ->
+    OpamPackage.t option
 
   val installed_versions :
-    GlobalOpts.t ->
-    string list ->
-    ((string * string option) list, 'a) Result.or_msg
+  string list ->
+    OpamTypes.switch_selections -> (string * OpamPackage.t option) list
 
-  val depends :
-    GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
+  val with_switch_state :
+    ?dir_name:Fpath.t ->
+    ([< OpamStateTypes.unlocked > `Lock_read `Lock_write ]
+     OpamStateTypes.switch_state ->
+    'a) ->
+    'a
 
-  val version :
-    GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
+  val with_switch_state_sel :  ?dir_name:Fpath.t -> (OpamTypes.switch_selections -> 'a) -> 'a
+
+  val with_virtual_state :
+    (OpamStateTypes.unlocked OpamStateTypes.switch_state -> 'a) -> 'a
+end
+
+module Conversions : sig
+  val version_of_pkg : OpamPackage.t -> string
 end
 
 val install : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result

@@ -142,4 +142,6 @@ let main () =
   in
   Stdlib.exit @@ Cmd.eval' (Cmd.v info term)
 
-let () = main ()
+let () =
+  Platform.Opam.Queries.init ();
+  main ()

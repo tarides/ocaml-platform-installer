@@ -6,11 +6,7 @@ open! Import
 type t
 
 val binary_name :
-  ocaml_version:Ocaml_version.t ->
-  name:string ->
-  ver:string ->
-  pure_binary:bool ->
-  t
+  ocaml:OpamPackage.t -> name:string -> ver:string -> pure_binary:bool -> t
 
 val name_to_string : t -> string
 val name : t -> string
@@ -20,7 +16,7 @@ val has_binary_package : Binary_repo.t -> t -> bool
 
 val make_binary_package :
   Opam.GlobalOpts.t ->
-  ocaml_version:Ocaml_version.t ->
+  ocaml:OpamPackage.t ->
   Sandbox_switch.t ->
   Binary_repo.t ->
   t ->

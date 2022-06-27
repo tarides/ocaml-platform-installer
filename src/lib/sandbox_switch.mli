@@ -2,20 +2,19 @@ open Import
 
 type t
 
+val get_sandbox_root : t -> Fpath.t
+
 val install :
   Opam.GlobalOpts.t ->
   t ->
   pkg:string * string option ->
   (unit, 'e) Result.or_msg
 
-val list_files :
-  Opam.GlobalOpts.t -> t -> pkg:string -> (Fpath.t list, 'e) Result.or_msg
-
 val switch_path_prefix : t -> Fpath.t
 
 val with_sandbox_switch :
   Opam.GlobalOpts.t ->
-  ocaml_version:Ocaml_version.t ->
+  ocaml:OpamPackage.t ->
   (t -> ('a, 'e) Result.or_msg) ->
   ('a, 'e) Result.or_msg
 (** Create a sandbox switch, call the passed function and finally remove the

@@ -15,6 +15,8 @@ type t = {
           [init] and removed during [deinit]. *)
 }
 
+let get_sandbox_root sb = sb.sandbox_root
+
 let compiler_tools =
   [
     "ocaml";
@@ -88,8 +90,8 @@ let with_var_sys_ocaml_version opam_opts ~ocaml_version f =
   let* () = Opam.Config.Var.set opam_opts ~global var ocaml_version in
   Fun.protect ~finally:restore_var f
 
-let init opam_opts ~ocaml_version =
-  let ocaml_version = Ocaml_version.to_string ocaml_version in
+let init opam_opts ~ocaml =
+  let ocaml_version = Opam.Conversions.version_of_pkg ocaml in
   (* Directory in which to create the switch. *)
   let* sandbox_root = OS.Dir.tmp "ocaml-platform-sandbox-%s" in
   let* compiler_path =
@@ -129,14 +131,10 @@ let install _opam_opts t ~pkg =
   let pkg = pkg_to_string pkg in
   Opam.install t.sandbox_opts [ pkg ]
 
-let list_files _opam_opts t ~pkg =
-  let+ files = Opam.Show.list_files t.sandbox_opts pkg in
-  List.map Fpath.v files
-
 let switch_path_prefix t = t.prefix
 
-let with_sandbox_switch opam_opts ~ocaml_version f =
-  let* sandbox = init opam_opts ~ocaml_version in
+let with_sandbox_switch opam_opts ~ocaml f =
+  let* sandbox = init opam_opts ~ocaml in
   Fun.protect
     ~finally:(fun () -> deinit opam_opts sandbox)
     (fun () -> f sandbox)
