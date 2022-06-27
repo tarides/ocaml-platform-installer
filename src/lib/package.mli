@@ -5,40 +5,13 @@ val to_string : full_name -> string
 val name : full_name -> string
 val ver : full_name -> string
 
-module FilesGenerator : sig
-  val field :
-    Format.formatter -> string -> (Format.formatter -> 'a -> unit) -> 'a -> unit
-
-  val field_opt :
-    Format.formatter ->
-    string ->
-    (Format.formatter -> 'a -> unit) ->
-    'a option ->
-    unit
-
-  val gen_list :
-    (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a list -> unit
-
-  val gen_string : Format.formatter -> string -> unit
-
-  val gen_option :
-    (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a option -> unit
-
-  val gen_field_with_opt :
-    (Format.formatter -> 'a -> unit) ->
-    (Format.formatter -> 'b -> unit) ->
-    Format.formatter ->
-    'a * 'b option ->
-    unit
-end
-
 module Opam_file : sig
   (** Package description. *)
 
   type t
   type cmd = string list
 
-  type dep = string * (string * string) option
+  type dep = string * ([ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string) list
   (** [name * (operator * constraint) option]. *)
 
   val v :
@@ -48,9 +21,10 @@ module Opam_file : sig
     ?url:Fpath.t ->
     opam_version:string ->
     pkg_name:string ->
+    unit ->
     t
 
-  val fprintf : t -> unit Fmt.t
+  val to_string : t -> string
 end
 
 module Install_file : sig
@@ -71,8 +45,9 @@ module Install_file : sig
     ?stublibs:(string * string option) list ->
     ?man:(string * string option) list ->
     ?misc:(string * string option) list ->
+    pkg_name:string ->
     unit ->
     t
 
-  val fprintf : t -> unit Fmt.t
+  val to_string : t -> string
 end

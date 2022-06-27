@@ -30,6 +30,7 @@ depends: [
   "bos"
   "ANSITerminal"
   "lwt"
+  "opam-file-format"
   "ppxlib"
   "odoc" {with-doc}
 ]

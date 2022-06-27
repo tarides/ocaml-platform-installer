@@ -38,4 +38,5 @@
   bos
   ANSITerminal
   lwt
+  opam-file-format
   ppxlib))

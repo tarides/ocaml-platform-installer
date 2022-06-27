@@ -45,17 +45,16 @@ let add_package opam_opts t pkg install opam =
     | Some install ->
         OS.File.writef
           Fpath.(repo_path / "files" / (Package.name pkg ^ ".install"))
-          "%a"
-          (Package.Install_file.fprintf install)
-          ()
+          "%s"
+          (Package.Install_file.to_string install)
   in
   let* () =
     OS.File.writef
       Fpath.(repo_path / "opam")
-      "%a"
-      (Package.Opam_file.fprintf opam)
-      ()
+      "%s"
+      (Package.Opam_file.to_string opam)
   in
+
   Opam.update opam_opts [ t.name ]
 
 let with_repo_enabled opam_opts t f =
