@@ -155,7 +155,9 @@ let install opam_opts tools =
       let+ () =
         Repo.with_repo_enabled opam_opts (Binary_repo.repo repo) (fun () ->
             Logs.app (fun m -> m "* Installing tools...");
-            Opam.install ~log_height:10 opam_opts tools_to_install)
+            Opam.install
+              { opam_opts with log_height = Some 10 }
+              tools_to_install)
       in
       Logs.app (fun m -> m "  -> All tools installed.");
       Logs.app (fun m ->
