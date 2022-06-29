@@ -40,13 +40,10 @@ let add_package opam_opts t pkg install opam =
   let* _ = OS.Dir.create repo_path in
   let* _ = OS.Dir.create Fpath.(repo_path / "files") in
   let* () =
-    match install with
-    | None -> Ok ()
-    | Some install ->
-        OS.File.writef
-          Fpath.(repo_path / "files" / (Package.name pkg ^ ".install"))
-          "%s"
-          (Package.Install_file.to_string install)
+    OS.File.writef
+      Fpath.(repo_path / "files" / (Package.name pkg ^ ".install"))
+      "%s"
+      (Package.Install_file.to_string install)
   in
   let* () =
     OS.File.writef
