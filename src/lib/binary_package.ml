@@ -4,67 +4,45 @@ open Astring
 open Bos
 
 module Binary_install_file = struct
-  type classified_files = {
-    bin : (Fpath.t * Fpath.t) list;
-    sbin : (Fpath.t * Fpath.t) list;
-    share : (Fpath.t * Fpath.t) list;
-    share_root : (Fpath.t * Fpath.t) list;
-    etc : (Fpath.t * Fpath.t) list;
-    doc : (Fpath.t * Fpath.t) list;
-    man : (Fpath.t * Fpath.t) list;
-    other : Fpath.t list;
-  }
-
   let classify_file pkg_name cf f =
     let open Fpath in
     let f = v f in
     let f = match rem_prefix (v "_opam") f with None -> f | Some f -> f in
     let l =
-      (* prefix, setter *)
+      (* prefix, category *)
       [
-        (v "bin", fun cf v -> { cf with bin = v :: cf.bin });
-        (v "sbin", fun cf v -> { cf with sbin = v :: cf.sbin });
-        (v "share" / pkg_name, fun cf v -> { cf with share = v :: cf.share });
-        (v "share_root", fun cf v -> { cf with share_root = v :: cf.share_root });
-        (v "doc" / pkg_name, fun cf v -> { cf with doc = v :: cf.doc });
-        (v "etc" / pkg_name, fun cf v -> { cf with etc = v :: cf.etc });
-        (v "man" / pkg_name, fun cf v -> { cf with man = v :: cf.man });
+        (v "bin", "bin");
+        (v "sbin", "sbin");
+        (v "share" / pkg_name, "share");
+        (v "share_root", "share_root");
+        (v "doc" / pkg_name, "doc");
+        (v "etc" / pkg_name, "etc");
+        (v "man" / pkg_name, "man");
       ]
     in
-    Option.value ~default:{ cf with other = f :: cf.other }
+    Option.value ~default:cf
     @@ List.find_map
-         (fun (value, setter) ->
-           Option.map (fun p -> setter cf (f, p)) (rem_prefix value f))
+         (fun (value, category) ->
+           Option.map
+             (fun p ->
+               match String.Map.find category cf with
+               | None -> String.Map.add category [ (f, p) ] cf
+               | Some l -> String.Map.add category ((f, p) :: l) cf)
+             (rem_prefix value f))
          l
 
   let from_file_list pkg_name fl =
-    match
-      List.fold_left (classify_file pkg_name)
-        {
-          bin = [];
-          sbin = [];
-          share = [];
-          share_root = [];
-          etc = [];
-          doc = [];
-          man = [];
-          other = [];
-        }
-        fl
-    with
-    | { bin; sbin; share; share_root; etc; doc; man; other = _ } ->
-        let process =
-          List.map (fun (n, f) -> (Fpath.to_string n, Some (Fpath.to_string f)))
-        in
-        let bin = process bin
-        and sbin = process sbin
-        and share = process share
-        and share_root = process share_root
-        and etc = process etc
-        and doc = process doc
-        and man = process man in
-        Package.Install_file.v ~bin ~sbin ~share ~share_root ~etc ~doc ~man
-          ~pkg_name ()
+    let empty =
+      let open String.Map in
+      empty |> add "bin" [] |> add "sbin" [] |> add "share" []
+      |> add "share_root" [] |> add "doc" [] |> add "etc" [] |> add "man" []
+    in
+    let classified_files = List.fold_left (classify_file pkg_name) empty fl in
+    let process =
+      List.map (fun (n, f) -> (Fpath.to_string n, Some (Fpath.to_string f)))
+    in
+    let classified_files = String.Map.map process classified_files in
+    Package.Install_file.v ~pkg_name classified_files
 end
 
 type full_name = Package.full_name

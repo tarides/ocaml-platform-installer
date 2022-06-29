@@ -85,39 +85,16 @@ module Install_file = struct
 
   type t = OpamParserTypes.FullPos.opamfile
 
-  let v ?lib ?lib_root ?libexec ?libexec_root ?bin ?sbin ?toplevel ?share
-      ?share_root ?etc ?doc ?stublibs ?man ?misc ~pkg_name () =
+  let v classified_files ~pkg_name =
     let of_option o = match o with None -> [] | Some a -> [ string a ] in
-    let l =
-      [
-        ("lib:", lib);
-        ("lib_root:", lib_root);
-        ("libexec:", libexec);
-        ("libexec_root:", libexec_root);
-        ("bin:", bin);
-        ("sbin:", sbin);
-        ("toplevel:", toplevel);
-        ("share:", share);
-        ("share_root:", share_root);
-        ("etc:", etc);
-        ("doc:", doc);
-        ("stublibs:", stublibs);
-        ("man:", man);
-        ("misc:", misc);
-      ]
-    in
-
-    let file_name = pkg_name ^ ".install"
-    and file_contents =
-      List.map
-        (fun (f, v) ->
+    let file_contents =
+      String.Map.fold
+        (fun f v l ->
           variable f
-            (list
-               (List.map
-                  (fun (p, c) -> option (string p) (of_option c))
-                  (Option.value ~default:[] v))))
-        l
-    in
+            (list (List.map (fun (p, c) -> option (string p) (of_option c)) v))
+          :: l)
+        classified_files []
+    and file_name = pkg_name ^ ".install" in
     { OpamParserTypes.FullPos.file_contents; file_name }
 
   let to_string t = OpamPrinter.FullPos.opamfile t
