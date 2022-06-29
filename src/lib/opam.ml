@@ -151,8 +151,7 @@ end
 module Show = struct
   let list_files opam_opts pkg_name =
     Cmd.run_l opam_opts Bos.Cmd.(v "show" % "--list-files" % pkg_name)
-    >>| List.filter_map (fun l ->
-            match String.trim l with "" -> None | f -> Some f)
+    >>| List.filter (fun l -> not (String.equal "" l))
 
   let available_versions opam_opts pkg_name =
     let open Result.Syntax in

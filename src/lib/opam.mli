@@ -85,9 +85,9 @@ module Show : sig
 end
 
 val install : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
-(** [install ~height opam_opts atoms] installs the [atoms] into the current
-    local switch. If opam has not been initialised, or if their is no local
-    switch this function will also create those too. *)
+(** [install opam_opts atoms] installs the [atoms] into the current local
+    switch. If opam has not been initialised, or if their is no local switch
+    this function will also create those too. *)
 
 val remove : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
 (** [remove atoms] removes the [atoms] from the current local switch. Returns
