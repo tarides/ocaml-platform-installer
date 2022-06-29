@@ -7,9 +7,10 @@ module GlobalOpts = struct
     root : Fpath.t;
     switch : string option;
     env : string String.map option;
+    log_height : int option;
   }
 
-  let v ~root ?switch ?env () = { root; switch; env }
+  let v ~root ?switch ?env ?log_height () = { root; switch; env; log_height }
 
   let default =
     let root =
@@ -33,7 +34,7 @@ module Cmd = struct
       v "opam" %% cmd % "--yes" % "-q" % "--color=never" %% switch_cmd
       %% root_cmd)
 
-  let run_gen ?log_height opam_opts (out_acc, out_wrap) cmd =
+  let run_gen opam_opts (out_acc, out_wrap) cmd =
     let cmd = t opam_opts cmd in
     let cmd_s = Bos.Cmd.to_string cmd in
     Logs.debug (fun m -> m "Running: %s" cmd_s);
@@ -48,6 +49,7 @@ module Cmd = struct
       |> Array.of_seq
     in
     let ((ic, _, ic_err) as channels) = Unix.open_process_full cmd_s env in
+    let log_height = opam_opts.log_height in
     let res, res_err = Ansi_box.read_and_print ~log_height ic ic_err out_acc in
     let s_err = String.concat ~sep:"\n" res_err in
     (match s_err with
@@ -78,23 +80,19 @@ module Cmd = struct
     | Unix.WEXITED 5 -> (None, status, true)
     | _ -> (None, status, false)
 
-  let out_acc acc line = match String.trim line with "" -> acc | l -> l :: acc
-  let out_s = ([], out_acc, fun l -> String.concat ~sep:"\n" @@ List.rev l)
+  let out_acc acc line = line :: acc
+
+  let out_s =
+    ([], out_acc, fun l -> String.trim @@ String.concat ~sep:"\n" @@ List.rev l)
+
   let out_l = ([], out_acc, fun l -> List.rev l)
   let out_ignore = ((), (fun () _line -> ()), fun () -> ())
-
-  let run_s ?log_height opam_opts cmd =
-    run_gen ?log_height opam_opts (out_s, out_strict) cmd
-
-  let run_l ?log_height opam_opts cmd =
-    run_gen ?log_height opam_opts (out_l, out_strict) cmd
-
-  let run ?log_height opam_opts cmd =
-    run_gen ?log_height opam_opts (out_ignore, out_strict) cmd
+  let run_s opam_opts cmd = run_gen opam_opts (out_s, out_strict) cmd
+  let run_l opam_opts cmd = run_gen opam_opts (out_l, out_strict) cmd
+  let run opam_opts cmd = run_gen opam_opts (out_ignore, out_strict) cmd
 
   (** Like [run_s] but handle the "not found" status. *)
-  let run_s_opt ?log_height opam_opts cmd =
-    run_gen ?log_height opam_opts (out_s, out_opt) cmd
+  let run_s_opt opam_opts cmd = run_gen opam_opts (out_s, out_opt) cmd
 end
 
 module Config = struct
@@ -205,8 +203,8 @@ module Show = struct
     Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "version" % pkg_name)
 end
 
-let install ?log_height opam_opts pkgs =
-  Cmd.run ?log_height opam_opts Bos.Cmd.(v "install" %% of_list pkgs)
+let install opam_opts pkgs =
+  Cmd.run opam_opts Bos.Cmd.(v "install" %% of_list pkgs)
 
 let remove opam_opts pkgs =
   Cmd.run opam_opts Bos.Cmd.(v "remove" %% of_list pkgs)

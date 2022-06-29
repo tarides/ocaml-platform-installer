@@ -7,9 +7,20 @@ module GlobalOpts : sig
     switch : string option;  (** Whether to pass the [--switch] option. *)
     env : string String.map option;
         (** Environment to use when calling commands. *)
+    log_height : int option;
+        (** [log_height] determines how the output of an [opam] call should be
+            displayed. With [None], no output is displayed. With [Some h], the
+            [h] last lines are displayed. *)
   }
 
-  val v : root:Fpath.t -> ?switch:string -> ?env:string String.map -> unit -> t
+  val v :
+    root:Fpath.t ->
+    ?switch:string ->
+    ?env:string String.map ->
+    ?log_height:int ->
+    unit ->
+    t
+
   val default : t
 end
 
@@ -73,17 +84,10 @@ module Show : sig
     GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
 end
 
-val install :
-  ?log_height:int ->
-  GlobalOpts.t ->
-  string list ->
-  (unit, [> `Msg of string ]) result
+val install : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
 (** [install ~height opam_opts atoms] installs the [atoms] into the current
     local switch. If opam has not been initialised, or if their is no local
-    switch this function will also create those too.
-
-    [log_height] determines how the output should be displayed. With [None], no
-    output is displayed. With [Some h], the [h] last lines are displayed. *)
+    switch this function will also create those too. *)
 
 val remove : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
 (** [remove atoms] removes the [atoms] from the current local switch. Returns

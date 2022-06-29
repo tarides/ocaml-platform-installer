@@ -11,15 +11,17 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
   and ic_err =
     Lwt_io.of_unix_fd (Unix.descr_of_in_channel ic_err) ~mode:Lwt_io.input
   in
-  let isatty = !isatty Unix.stdout in
-  let terminal_size = ref (if isatty then fst @@ size () else 0) in
-  let () =
-    Option.iter
+  let isatty = Unix.isatty Unix.stdout in
+  let () = ANSITerminal.isatty := fun _ -> isatty in
+  let terminal_size = ref (fst @@ size ()) in
+  let old_signal =
+    Option.map
       (fun sigwinch ->
-        Sys.set_signal sigwinch
-          (Sys.Signal_handle
-             (fun i ->
-               if i = sigwinch then terminal_size := fst @@ size () else ())))
+        ( Sys.signal sigwinch
+            (Sys.Signal_handle
+               (fun i ->
+                 if i = sigwinch then terminal_size := fst @@ size () else ())),
+          sigwinch ))
       sigwinch
   in
   let ansi_enabled = isatty && Option.is_some sigwinch in
@@ -100,6 +102,11 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
         print_history history i;
         process_new_line acc acc_err history promises i
   in
+  Fun.protect ~finally:(fun () ->
+      Option.iter
+        (fun (old_signal, sigwinch) -> Sys.set_signal sigwinch old_signal)
+        old_signal)
+  @@ fun () ->
   Lwt_main.run
   @@ process_new_line out_init [] [] [ read_line (); read_err_line () ] 0
   |> fun (acc, acc_err) -> (out_finish acc, acc_err)
