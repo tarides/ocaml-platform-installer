@@ -43,11 +43,10 @@ end
 
 let setup_box ~log_height f =
   let run_with_logs_disabled f = f (fun _ -> ()) in
-  match log_height with
-  | None -> run_with_logs_disabled f
-  | _ when (not (Unix.isatty Unix.stdout)) || Option.is_none sigwinch ->
-      run_with_logs_disabled f
-  | Some log_height ->
+  match (log_height, sigwinch) with
+  | None, _ | _, None -> run_with_logs_disabled f
+  | _ when not (Unix.isatty Unix.stdout) -> run_with_logs_disabled f
+  | Some log_height, Some sigwinch ->
       let open ANSITerminal in
       let terminal_size = ref (fst (size ())) in
       let history = Ring.create log_height "" in
@@ -72,24 +71,17 @@ let setup_box ~log_height f =
       in
       (* Setup and teardown. *)
       let old_signal =
-        Option.map
-          (fun sigwinch ->
-            ( Sys.signal sigwinch
-                (Sys.Signal_handle
-                   (fun i ->
-                     if i = sigwinch then terminal_size := fst @@ size ()
-                     else ())),
-              sigwinch ))
-          sigwinch
+        Sys.signal sigwinch
+          (Sys.Signal_handle
+             (fun i ->
+               if i = sigwinch then terminal_size := fst @@ size () else ()))
       in
       let old_isatty = !ANSITerminal.isatty in
       (* Avoid repeated calls to isatty. *)
       (ANSITerminal.isatty := fun _ -> true);
       let finally () =
         (* Restore previous sigwinch handler. *)
-        Option.iter
-          (fun (old_signal, sigwinch) -> Sys.set_signal sigwinch old_signal)
-          old_signal;
+        Sys.set_signal sigwinch old_signal;
         ANSITerminal.isatty := old_isatty;
         clear_logs ()
       in
