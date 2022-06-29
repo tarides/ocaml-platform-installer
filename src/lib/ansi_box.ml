@@ -13,7 +13,7 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
   in
   let isatty = Unix.isatty Unix.stdout in
   let () = ANSITerminal.isatty := fun _ -> isatty in
-  let terminal_size = ref (fst @@ size ()) in
+  let terminal_size = ref (if isatty then fst @@ size () else 0) in
   let old_signal =
     Option.map
       (fun sigwinch ->
