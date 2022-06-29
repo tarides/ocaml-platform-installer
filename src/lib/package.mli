@@ -1,3 +1,5 @@
+open Astring
+
 type full_name
 
 val v : name:string -> ver:string -> full_name
@@ -29,24 +31,6 @@ end
 module Install_file : sig
   type t
 
-  val v :
-    ?lib:(string * string option) list ->
-    ?lib_root:(string * string option) list ->
-    ?libexec:(string * string option) list ->
-    ?libexec_root:(string * string option) list ->
-    ?bin:(string * string option) list ->
-    ?sbin:(string * string option) list ->
-    ?toplevel:(string * string option) list ->
-    ?share:(string * string option) list ->
-    ?share_root:(string * string option) list ->
-    ?etc:(string * string option) list ->
-    ?doc:(string * string option) list ->
-    ?stublibs:(string * string option) list ->
-    ?man:(string * string option) list ->
-    ?misc:(string * string option) list ->
-    pkg_name:string ->
-    unit ->
-    t
-
+  val v : (string * string option) list String.Map.t -> pkg_name:string -> t
   val to_string : t -> string
 end
