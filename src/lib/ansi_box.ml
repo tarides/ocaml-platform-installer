@@ -5,6 +5,12 @@ external sigwinch : unit -> int option = "ocaml_sigwinch"
 
 let sigwinch = sigwinch ()
 
+(** Write to a [ref] before calling [f] and restore its previous value after. *)
+let with_ref_set ref value f =
+  let old_value = !ref in
+  ref := value;
+  Fun.protect ~finally:(fun () -> ref := old_value) f
+
 let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
   let out_acc_err acc l = l :: acc in
   let ic = Lwt_io.of_unix_fd (Unix.descr_of_in_channel ic) ~mode:Lwt_io.input
@@ -12,7 +18,6 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
     Lwt_io.of_unix_fd (Unix.descr_of_in_channel ic_err) ~mode:Lwt_io.input
   in
   let isatty = Unix.isatty Unix.stdout in
-  let () = ANSITerminal.isatty := fun _ -> isatty in
   let terminal_size = ref (if isatty then fst @@ size () else 0) in
   let old_signal =
     Option.map
@@ -99,10 +104,13 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
         print_history history i;
         process_new_line acc acc_err history i
   in
+  (* Restore previous sigwinch handler. *)
   Fun.protect ~finally:(fun () ->
       Option.iter
         (fun (old_signal, sigwinch) -> Sys.set_signal sigwinch old_signal)
         old_signal)
+  @@ fun () ->
+  with_ref_set ANSITerminal.isatty (fun _ -> isatty)
   @@ fun () ->
   Lwt_main.run @@ process_new_line out_init [] [] 0 |> fun (acc, acc_err) ->
   (out_finish acc, acc_err)
