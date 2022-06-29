@@ -4,6 +4,43 @@ external sigwinch : unit -> int option = "ocaml_sigwinch"
 
 let sigwinch = sigwinch ()
 
+module Ring = struct
+  type 'a t = {
+    buf : 'a array;
+    mutable wrapped : bool;
+        (** Whether the history was filled once and don't contain an
+            uninitialised part. When [false], indexes between [head] and
+            [Array.length buf] are invalid. *)
+    mutable head : int;
+  }
+
+  let create capacity dummy_elt =
+    if capacity <= 0 then invalid_arg "Ring.create";
+    { buf = Array.make capacity dummy_elt; wrapped = false; head = 0 }
+
+  (** Override the oldest element if the buffer is full. *)
+  let append ({ buf; head; _ } as t) x =
+    buf.(head) <- x;
+    if head + 1 >= Array.length buf then (
+      t.head <- 0;
+      t.wrapped <- true)
+    else t.head <- head + 1
+
+  (** [min capacity n_added_element] *)
+  let length t = if t.wrapped then Array.length t.buf else t.head
+
+  (** From oldest to newest. *)
+  let iter t f =
+    let buf = t.buf in
+    if t.wrapped then
+      for i = t.head to Array.length buf - 1 do
+        f buf.(i)
+      done;
+    for i = 0 to t.head - 1 do
+      f buf.(i)
+    done
+end
+
 let setup_box ~log_height f =
   let run_with_logs_disabled f = f (fun _ -> ()) in
   match log_height with
@@ -13,45 +50,25 @@ let setup_box ~log_height f =
   | Some log_height ->
       let open ANSITerminal in
       let terminal_size = ref (fst (size ())) in
-      let printf = printf [ Foreground Blue ] in
-      let print_history h i =
-        let rec refresh_history h n =
-          match h with
-          | a :: q when n <= log_height ->
-              erase Eol;
-              printf "%s"
-                (String.sub a 0 @@ min (String.length a) (!terminal_size - 1));
-              move_cursor 0 (-1);
-              move_bol ();
-              refresh_history q (n + 1)
-          | _ ->
-              move_cursor 0 n;
-              move_bol ()
-        in
-        if i <= log_height then
-          match h with
-          | [] -> ()
-          | line :: _ ->
-              printf "%s\n"
-                (String.sub line 0
-                @@ min (String.length line) (!terminal_size - 1))
-        else refresh_history h 0;
+      let history = Ring.create log_height "" in
+      let print_line line =
+        printf [ Foreground Blue ] "%s\n"
+          (String.sub line 0 @@ min (String.length line) (!terminal_size - 1))
+      in
+      let print_history () =
+        Ring.iter history print_line;
         flush_all ()
       in
-      let history = ref [] in
-      let history_length = ref 0 in
-      let log_line line =
-        history := line :: !history;
-        incr history_length;
-        print_history !history !history_length
+      let clear_logs () =
+        for _ = 1 to Ring.length history do
+          move_cursor 0 (-1);
+          erase Eol
+        done
       in
-      let clean_logs () =
-        for _ = 0 to Int.min !history_length log_height do
-          move_bol ();
-          erase Eol;
-          move_cursor 0 (-1)
-        done;
-        move_cursor 0 1
+      let log_line line =
+        clear_logs ();
+        Ring.append history line;
+        print_history ()
       in
       (* Setup and teardown. *)
       let old_signal =
@@ -74,7 +91,7 @@ let setup_box ~log_height f =
           (fun (old_signal, sigwinch) -> Sys.set_signal sigwinch old_signal)
           old_signal;
         ANSITerminal.isatty := old_isatty;
-        clean_logs ()
+        clear_logs ()
       in
       Fun.protect ~finally (fun () -> f log_line)
 
