@@ -32,7 +32,8 @@ module Opam_file = struct
   let option v l = with_pos @@ OpamParserTypes.FullPos.Option (v, with_pos l)
   let prefix_relop p v = with_pos @@ Prefix_relop (with_pos p, v)
 
-  let v ?install ?depends ?conflicts ?url ~opam_version ~pkg_name () =
+  let v ?install ?depends ?conflicts ?url ~pkg_name () =
+    let opam_version = "2.0" in
     let file_name = "opam" in
     let opam_version = variable "opam-version" (string opam_version)
     and name = variable "name" (string pkg_name)

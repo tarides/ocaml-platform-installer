@@ -19,7 +19,6 @@ module Opam_file : sig
     ?depends:dep list ->
     ?conflicts:string list ->
     ?url:Fpath.t ->
-    opam_version:string ->
     pkg_name:string ->
     unit ->
     t

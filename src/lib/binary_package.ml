@@ -97,7 +97,7 @@ let generate_opam_file original_name bname pure_binary archive_path install
   in
   Package.Opam_file.v ?install
     ~depends:[ ("ocaml", [ (`Eq, Ocaml_version.to_string ocaml_version) ]) ]
-    ?conflicts ~url:archive_path ~opam_version:"2.0" ~pkg_name:(name bname) ()
+    ?conflicts ~url:archive_path ~pkg_name:(name bname) ()
 
 let should_remove = Fpath.(is_prefix (v "lib"))
 
