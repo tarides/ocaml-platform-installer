@@ -25,6 +25,6 @@ val make_binary_package :
   full_name ->
   name:string ->
   pure_binary:bool ->
-  (Package.Install_file.t option * Package.Opam_file.t, 'e) Result.or_msg
+  (Package.Install_file.t * Package.Opam_file.t, 'e) Result.or_msg
 (** Make a binary package from the result of installing a package in the sandbox
     switch. *)

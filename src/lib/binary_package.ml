@@ -52,15 +52,7 @@ module Binary_install_file = struct
         }
         fl
     with
-    | { other = _ :: _ as other; _ } ->
-        List.iter
-          (fun file ->
-            Logs.debug (fun m ->
-                m "%s does not apply for a .install file due to %s" pkg_name
-                  (Fpath.to_string file)))
-          other;
-        None
-    | { bin; sbin; share; share_root; etc; doc; man; other = [] } ->
+    | { bin; sbin; share; share_root; etc; doc; man; other = _ } ->
         let process =
           List.map (fun (n, f) -> (Fpath.to_string n, Some (Fpath.to_string f)))
         in
@@ -71,9 +63,8 @@ module Binary_install_file = struct
         and etc = process etc
         and doc = process doc
         and man = process man in
-        Some
-          (Package.Install_file.v ~bin ~sbin ~share ~share_root ~etc ~doc ~man
-             ~pkg_name ())
+        Package.Install_file.v ~bin ~sbin ~share ~share_root ~etc ~doc ~man
+          ~pkg_name ()
 end
 
 type full_name = Package.full_name
@@ -89,13 +80,10 @@ let ver = Package.ver
 let package t = t
 let to_string = Package.to_string
 
-let generate_opam_file original_name bname pure_binary archive_path install
+let generate_opam_file original_name bname pure_binary archive_path
     ocaml_version =
   let conflicts = if pure_binary then None else Some [ original_name ] in
-  let install =
-    if install then Some [ [ "cp"; "-pPR"; "."; "%{prefix}%" ] ] else None
-  in
-  Package.Opam_file.v ?install
+  Package.Opam_file.v
     ~depends:[ ("ocaml", [ (`Eq, Ocaml_version.to_string ocaml_version) ]) ]
     ?conflicts ~url:archive_path ~pkg_name:(name bname) ()
 
@@ -133,8 +121,7 @@ let make_binary_package opam_opts ~ocaml_version sandbox archive_path bname
   OS.File.exists archive_path >>= fun archive_created ->
   let install = Binary_install_file.from_file_list query_name paths in
   let opam_file =
-    generate_opam_file query_name bname pure_binary archive_path
-      (Option.is_none install) ocaml_version
+    generate_opam_file query_name bname pure_binary archive_path ocaml_version
   in
   if not archive_created then
     Error (`Msg "Couldn't generate the package archive for unknown reason.")
