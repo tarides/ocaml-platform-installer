@@ -12,7 +12,7 @@ let with_ref_set ref value f =
   Fun.protect ~finally:(fun () -> ref := old_value) f
 
 let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
-  let out_acc_err acc l = l :: acc in
+  let err_acc acc l = l :: acc in
   let ic = Lwt_io.of_unix_fd (Unix.descr_of_in_channel ic) ~mode:Lwt_io.input
   and ic_err =
     Lwt_io.of_unix_fd (Unix.descr_of_in_channel ic_err) ~mode:Lwt_io.input
@@ -58,10 +58,17 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
         flush_all ()
     | _ -> ()
   in
-  let clean i =
+  let history = ref [] in
+  let history_length = ref 0 in
+  let add_log_line line =
+    history := line :: !history;
+    incr history_length;
+    print_history !history !history_length
+  in
+  let clean_logs () =
     match log_height with
     | Some log_height when ansi_enabled ->
-        for _ = 0 to Int.min i log_height do
+        for _ = 0 to Int.min !history_length log_height do
           move_bol ();
           erase Eol;
           move_cursor 0 (-1)
@@ -70,39 +77,21 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
     | _ -> ()
   in
   let open Lwt.Syntax in
-  let read_line () =
-    let+ l = Lwt_io.read_line_opt ic in
-    (`Std, l)
-  and read_err_line () =
-    let+ l = Lwt_io.read_line_opt ic_err in
-    (`Err, l)
+  let rec process_stdout acc =
+    let* line = Lwt_io.read_line_opt ic in
+    match line with
+    | Some line ->
+        add_log_line line;
+        process_stdout (out_acc acc line)
+    | None -> Lwt.return acc
   in
-  let next_lines () =
-    let+ lines = Lwt.npick [ read_line (); read_err_line () ] in
-    List.fold_left
-      (fun lines res ->
-        match res with _, None -> lines | kind, Some l -> (kind, l) :: lines)
-      [] lines
-  in
-  let add_lines h acc acc_err lines =
-    let add_line (acc, acc_err, history) line =
-      match line with
-      | `Std, l -> (out_acc acc l, acc_err, l :: history)
-      | `Err, l -> (acc, out_acc_err acc_err l, l :: history)
-    in
-    List.fold_left add_line (acc, acc_err, h) lines
-  in
-  let rec process_new_line acc acc_err history i =
-    let* lines = next_lines () in
-    let acc, acc_err, history = add_lines history acc acc_err lines in
-    match lines with
-    | [] ->
-        clean i;
-        Lwt.return (acc, acc_err)
-    | _ ->
-        let i = i + List.length lines in
-        print_history history i;
-        process_new_line acc acc_err history i
+  let rec process_stderr acc =
+    let* line = Lwt_io.read_line_opt ic_err in
+    match line with
+    | Some line ->
+        add_log_line line;
+        process_stderr (err_acc acc line)
+    | None -> Lwt.return acc
   in
   (* Restore previous sigwinch handler. *)
   Fun.protect ~finally:(fun () ->
@@ -110,7 +99,8 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
         (fun (old_signal, sigwinch) -> Sys.set_signal sigwinch old_signal)
         old_signal)
   @@ fun () ->
-  with_ref_set ANSITerminal.isatty (fun _ -> isatty)
-  @@ fun () ->
-  Lwt_main.run @@ process_new_line out_init [] [] 0 |> fun (acc, acc_err) ->
-  (out_finish acc, acc_err)
+  with_ref_set ANSITerminal.isatty (fun _ -> isatty) @@ fun () ->
+  Fun.protect ~finally:clean_logs @@ fun () ->
+  Lwt_main.run
+    (let+ acc = process_stdout out_init and+ acc_err = process_stderr [] in
+     (out_finish acc, acc_err))
