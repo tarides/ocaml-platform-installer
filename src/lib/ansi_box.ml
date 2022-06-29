@@ -72,15 +72,12 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
     let+ l = Lwt_io.read_line_opt ic_err in
     (`Err, l)
   in
-  let next_lines promises =
-    let+ lines, promises = Lwt.nchoose_split promises in
+  let next_lines () =
+    let+ lines = Lwt.npick [ read_line (); read_err_line () ] in
     List.fold_left
-      (fun (lines, promises) res ->
-        match res with
-        | _, None -> (lines, promises)
-        | `Std, Some l -> ((`Std, l) :: lines, read_line () :: promises)
-        | `Err, Some l -> ((`Err, l) :: lines, read_err_line () :: promises))
-      ([], promises) lines
+      (fun lines res ->
+        match res with _, None -> lines | kind, Some l -> (kind, l) :: lines)
+      [] lines
   in
   let add_lines h acc acc_err lines =
     let add_line (acc, acc_err, history) line =
@@ -90,8 +87,8 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
     in
     List.fold_left add_line (acc, acc_err, h) lines
   in
-  let rec process_new_line acc acc_err history promises i =
-    let* lines, promises = next_lines promises in
+  let rec process_new_line acc acc_err history i =
+    let* lines = next_lines () in
     let acc, acc_err, history = add_lines history acc acc_err lines in
     match lines with
     | [] ->
@@ -100,13 +97,12 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
     | _ ->
         let i = i + List.length lines in
         print_history history i;
-        process_new_line acc acc_err history promises i
+        process_new_line acc acc_err history i
   in
   Fun.protect ~finally:(fun () ->
       Option.iter
         (fun (old_signal, sigwinch) -> Sys.set_signal sigwinch old_signal)
         old_signal)
   @@ fun () ->
-  Lwt_main.run
-  @@ process_new_line out_init [] [] [ read_line (); read_err_line () ] 0
-  |> fun (acc, acc_err) -> (out_finish acc, acc_err)
+  Lwt_main.run @@ process_new_line out_init [] [] 0 |> fun (acc, acc_err) ->
+  (out_finish acc, acc_err)
