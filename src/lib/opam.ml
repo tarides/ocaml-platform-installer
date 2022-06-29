@@ -85,7 +85,7 @@ module Cmd = struct
   let out_s =
     ([], out_acc, fun l -> String.trim @@ String.concat ~sep:"\n" @@ List.rev l)
 
-  let out_l = ([], out_acc, fun l -> List.rev l)
+  let out_l = ([], out_acc, List.rev)
   let out_ignore = ((), (fun () _line -> ()), fun () -> ())
   let run_s opam_opts cmd = run_gen opam_opts (out_s, out_strict) cmd
   let run_l opam_opts cmd = run_gen opam_opts (out_l, out_strict) cmd
@@ -151,6 +151,8 @@ end
 module Show = struct
   let list_files opam_opts pkg_name =
     Cmd.run_l opam_opts Bos.Cmd.(v "show" % "--list-files" % pkg_name)
+    >>| List.filter_map (fun l ->
+            match String.trim l with "" -> None | f -> Some f)
 
   let available_versions opam_opts pkg_name =
     let open Result.Syntax in
