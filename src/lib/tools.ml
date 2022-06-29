@@ -159,11 +159,11 @@ let install opam_opts tools =
               { opam_opts with log_height = Some 10 }
               tools_to_install)
       in
-      Logs.app (fun m -> m "  -> All tools installed.");
       Logs.app (fun m ->
           m
-            "* Success. For more information on the installed tools, run \
-             `ocaml-platform --help`")
+            "  -> All tools installed. For more information on the platform \
+             tools, run `ocaml-platform --help`");
+      Logs.app (fun m -> m "* Success.")
 
 let find_ocamlformat_version () =
   match OS.File.read_lines (Fpath.v ".ocamlformat") with
