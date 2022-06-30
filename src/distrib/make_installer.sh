@@ -60,6 +60,15 @@ download()
     fi
 }
 
+# Args: sha512 path
+check_sha512()
+{
+  if command -v sha512sum >/dev/null
+  then sha512sum --check --quiet - <<<"\$1 \$2"
+  else shasum -a 512 --check --quiet - <<<"\$1 \$2"
+  fi
+}
+
 install_opam ()
 {
   local opam_bin opam_base_url sha512
@@ -84,7 +93,7 @@ install_opam ()
 
   echo "=> Download \$opam_bin"
   download opam "\$opam_base_url/\$opam_bin"
-  sha512sum --check --quiet - <<<"\$sha512 opam"
+  check_sha512 "\$sha512" opam
 
   echo "=> Install into \$PREFIX/bin"
   install -m755 "opam" "\$PREFIX/bin"
@@ -94,7 +103,7 @@ cd "\$(mktemp -d)"
 
 echo "=> Download \$archive" >&2
 download "\$archive" "$ARCHIVES_URL/\$archive"
-sha512sum --check --quiet - <<<"\$sha512 \$archive"
+check_sha512 "\$sha512" "\$archive"
 tar xf "\$archive"
 
 echo "=> Install into \$PREFIX/bin"
