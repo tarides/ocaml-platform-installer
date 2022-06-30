@@ -12,7 +12,7 @@ This installer installs all the tools of the Platform in a switch and aims at of
 To install the `ocaml-platform` binary, run the installer script as `root`:
 
 ```sh
-sudo bash < <(curl -L https://github.com/tarides/ocaml-platform-installer/releases/latest/download/installer.sh)
+sudo bash < <(curl -sL https://github.com/tarides/ocaml-platform-installer/releases/latest/download/installer.sh)
 ```
 
 Don't hesitate to have a look at what the script does.
