@@ -5,6 +5,7 @@
 - Use an install file instead of install instruction in binary package (#73)
 - Better logs, including few sliding lines of opam output when necessary (#57)
 - Fix duplicate files in binary package archive (#71)
+- Fix the installer script not working on macos (#77)
 
 ## 0.1.0 (2022-06-15)
 
