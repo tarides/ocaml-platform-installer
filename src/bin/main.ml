@@ -19,7 +19,8 @@ let rec log_error = function
 let install_platform () =
   let opam_opts = Platform.Opam.GlobalOpts.default in
   let install_res =
-    let _ = Platform.Opam.check_init () in
+    let open Result.Syntax in
+    let* () = Platform.Opam.check_init () in
     Platform.Tools.(install opam_opts (platform ()))
   in
   match install_res with
