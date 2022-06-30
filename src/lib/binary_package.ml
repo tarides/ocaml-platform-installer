@@ -32,11 +32,7 @@ module Binary_install_file = struct
          l
 
   let from_file_list pkg_name fl =
-    let empty =
-      let open String.Map in
-      empty |> add "bin" [] |> add "sbin" [] |> add "share" []
-      |> add "share_root" [] |> add "doc" [] |> add "etc" [] |> add "man" []
-    in
+    let empty = String.Map.empty in
     let classified_files = List.fold_left (classify_file pkg_name) empty fl in
     let process =
       List.map (fun (n, f) -> (Fpath.to_string n, Some (Fpath.to_string f)))
