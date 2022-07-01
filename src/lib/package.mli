@@ -16,10 +16,16 @@ module Opam_file : sig
   type dep = string * ([ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string) list
   (** [name * (operator * constraint) option]. *)
 
+  type atom = [ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string * string
+  (** [operator * var_name * constraint] *)
+
+  type formula = Atom of atom | Formula of [ `And | `Or ] * formula * formula
+
   val v :
     ?install:cmd list ->
     ?depends:dep list ->
     ?conflicts:string list ->
+    ?available:formula ->
     ?url:Fpath.t ->
     pkg_name:string ->
     unit ->
