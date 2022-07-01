@@ -2,6 +2,8 @@
 
 ## unreleased
 
+- Add an `available` field with `arch` and `os-distribution` in the opam files
+  of the binary package (#74)
 - Improve logging behaviour in case of user interrupt (#80)
 - Use an install file instead of install instruction in binary package (#73)
 - Better logs, including few sliding lines of opam output when necessary (#57)
