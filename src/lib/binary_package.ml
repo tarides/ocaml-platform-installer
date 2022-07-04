@@ -54,11 +54,9 @@ let ver = Package.ver
 let package t = t
 let to_string = Package.to_string
 
-let generate_opam_file opam_opts original_name bname pure_binary archive_path
-    ocaml_version =
+let generate_opam_file ~arch ~os_distribution original_name bname pure_binary
+    archive_path ocaml_version =
   let conflicts = if pure_binary then None else Some [ original_name ] in
-  let* arch = Opam.Config.Var.get opam_opts "arch" in
-  let+ os_distribution = Opam.Config.Var.get opam_opts "os-distribution" in
   let available =
     let open Package.Opam_file in
     Package.Opam_file.Formula
@@ -105,9 +103,11 @@ let make_binary_package opam_opts ~ocaml_version sandbox archive_path bname
   >>= fun () ->
   OS.File.exists archive_path >>= fun archive_created ->
   let install = Binary_install_file.from_file_list query_name paths in
-  let* opam_file =
-    generate_opam_file opam_opts query_name bname pure_binary archive_path
-      ocaml_version
+  let* arch = Opam.Config.Var.get opam_opts "arch" in
+  let* os_distribution = Opam.Config.Var.get opam_opts "os-distribution" in
+  let opam_file =
+    generate_opam_file ~arch ~os_distribution query_name bname pure_binary
+      archive_path ocaml_version
   in
   if not archive_created then
     Error (`Msg "Couldn't generate the package archive for unknown reason.")
