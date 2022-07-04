@@ -82,10 +82,12 @@ let setup_box ~log_height f =
       let finally () =
         (* Restore previous sigwinch handler. *)
         Sys.set_signal sigwinch old_signal;
-        ANSITerminal.isatty := old_isatty;
-        clear_logs ()
+        ANSITerminal.isatty := old_isatty
       in
-      Fun.protect ~finally (fun () -> f log_line)
+      Fun.protect ~finally (fun () ->
+          let res = f log_line in
+          clear_logs ();
+          res)
 
 let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
   let err_acc acc l = l :: acc in
