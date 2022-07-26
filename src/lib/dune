@@ -6,6 +6,7 @@
  (libraries
   astring
   angstrom
+  binary_repo
   ocaml-version
   bos.setup
   ANSITerminal

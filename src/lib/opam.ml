@@ -1,4 +1,5 @@
-open Bos_setup
+open Astring
+open Bos
 open Import
 open Result.Syntax
 

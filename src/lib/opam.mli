@@ -1,4 +1,4 @@
-open Bos_setup
+open Astring
 open Import
 
 module GlobalOpts : sig
