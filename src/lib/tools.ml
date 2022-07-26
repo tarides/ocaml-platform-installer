@@ -86,10 +86,19 @@ let best_version_of_tool opam_opts ocaml_version tool =
 
 let make_binary_package opam_opts ~ocaml_version sandbox repo bname tool =
   let { name; pure_binary; _ } = tool in
-  Sandbox_switch.install opam_opts sandbox ~pkg:(tool.name, tool.version)
-  >>= fun () ->
-  Binary_repo.add_binary_package opam_opts ~ocaml_version sandbox repo bname
-    ~name ~pure_binary
+  let* () =
+    Sandbox_switch.install opam_opts sandbox ~pkg:(tool.name, tool.version)
+  in
+  let* arch = Opam.Config.Var.get opam_opts "arch" in
+  let* os_distribution = Opam.Config.Var.get opam_opts "os-distribution" in
+  let archive_path = Binary_repo.archive_path repo bname in
+  let prefix = Sandbox_switch.switch_path_prefix sandbox in
+  let* files = Sandbox_switch.list_files opam_opts sandbox ~pkg:name in
+  let* bpkg =
+    Binary_package.make_binary_package ~ocaml_version ~arch ~os_distribution
+      ~prefix ~files ~archive_path bname ~name ~pure_binary
+  in
+  Binary_repo.add_binary_package repo bname bpkg
 
 let install opam_opts tools =
   let binary_repo_path =
@@ -101,7 +110,7 @@ let install opam_opts tools =
   | None -> Result.errorf "Cannot install tools: No switch is selected."
   | Some s -> OV.of_string s)
   >>= fun ocaml_version ->
-  Binary_repo.init opam_opts binary_repo_path >>= fun repo ->
+  Binary_repo.init binary_repo_path >>= fun repo ->
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
@@ -153,7 +162,9 @@ let install opam_opts tools =
       Ok ()
   | _ ->
       let+ () =
-        Repo.with_repo_enabled opam_opts (Binary_repo.repo repo) (fun () ->
+        let repo = Binary_repo.repo repo in
+        Installed_repo.with_repo_enabled opam_opts repo (fun () ->
+            let* () = Installed_repo.update opam_opts repo in
             Logs.app (fun m -> m "* Installing tools...");
             Opam.install
               { opam_opts with log_height = Some 10 }

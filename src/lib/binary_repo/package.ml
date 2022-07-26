@@ -1,4 +1,3 @@
-open! Import
 open Astring
 
 type full_name = { name : string; ver : string }

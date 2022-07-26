@@ -1,12 +1,10 @@
-open Import
-open Result.Syntax
 open Astring
 open Bos
+open Rresult
 
 module Binary_install_file = struct
   let classify_file pkg_name cf f =
     let open Fpath in
-    let f = v f in
     let f = match rem_prefix (v "_opam") f with None -> f | Some f -> f in
     let l =
       (* prefix, category *)
@@ -70,29 +68,29 @@ let generate_opam_file ~arch ~os_distribution original_name bname pure_binary
   Package.Opam_file.v ~depends ~available ?conflicts ~url:archive_path
     ~pkg_name:(name bname) ()
 
-let should_remove = Fpath.(is_prefix (v "lib"))
+(** Ignore files that do not exist. *)
+let filter_exists files =
+  let rec loop acc = function
+    | [] -> Ok (List.rev acc)
+    | hd :: tl ->
+        Bos.OS.File.exists hd >>= fun ex ->
+        let acc = if ex then hd :: acc else acc in
+        loop acc tl
+  in
+  loop [] files
 
-let process_path prefix path =
-  let+ ex = Bos.OS.File.exists path in
-  if not ex then None
-  else
-    match Fpath.rem_prefix prefix path with
-    | None -> None
-    | Some path ->
-        if should_remove path then None else Some Fpath.(base prefix // path)
+(** Remove paths starting with [lib/]. *)
+let remove_lib ~prefix paths = List.filter Fpath.(is_prefix (prefix / "lib")) paths
+
+type binary_pkg = Package.Install_file.t * Package.Opam_file.t
 
 (** Binary is already in the sandbox. Add this binary as a package in the local
     repo *)
-let make_binary_package opam_opts ~ocaml_version sandbox archive_path bname
-    ~name:query_name ~pure_binary =
-  let prefix = Sandbox_switch.switch_path_prefix sandbox in
-  Sandbox_switch.list_files opam_opts sandbox ~pkg:query_name >>= fun paths ->
-  let* paths =
-    paths
-    |> Result.List.filter_map (process_path prefix)
-    >>| List.map Fpath.to_string
-  in
-  let tar_input = paths |> String.concat ~sep:"\n" in
+let make_binary_package ~ocaml_version ~arch ~os_distribution ~prefix ~files
+    ~archive_path bname ~name:query_name ~pure_binary =
+  filter_exists files >>= fun files ->
+  let paths = remove_lib ~prefix files in
+  let tar_input = List.map Fpath.to_string paths |> String.concat ~sep:"\n" in
   OS.Cmd.(
     in_string tar_input
     |> run_in
@@ -103,8 +101,6 @@ let make_binary_package opam_opts ~ocaml_version sandbox archive_path bname
   >>= fun () ->
   OS.File.exists archive_path >>= fun archive_created ->
   let install = Binary_install_file.from_file_list query_name paths in
-  let* arch = Opam.Config.Var.get opam_opts "arch" in
-  let* os_distribution = Opam.Config.Var.get opam_opts "os-distribution" in
   let opam_file =
     generate_opam_file ~arch ~os_distribution query_name bname pure_binary
       archive_path ocaml_version
