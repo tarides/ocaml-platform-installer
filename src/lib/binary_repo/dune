@@ -1,4 +1,5 @@
 (library
  (name binary_repo)
+ (public_name platform.binary_repo)
  (wrapped false)
  (libraries bos astring ocaml-version opam-file-format))
