@@ -76,7 +76,7 @@ let init opam_opts ocaml_version =
     Fpath.(opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / name)
   in
   let pkg =
-    Package.v ~name:"ocaml-system" ~ver:(Ocaml_version.to_string ocaml_version)
+    Package.v ~name:"ocaml-system" ~ver:ocaml_version
   in
   let* repo = Repo.init ~name path in
   if Repo.has_pkg repo pkg then Ok repo
