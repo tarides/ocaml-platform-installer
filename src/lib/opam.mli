@@ -77,6 +77,8 @@ module Show : sig
     string list ->
     ((string * string option) list, 'a) Result.or_msg
 
+  val opam_file : GlobalOpts.t -> pkg:string -> (string, 'a) Result.or_msg
+
   val depends :
     GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
 

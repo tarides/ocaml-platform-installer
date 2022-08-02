@@ -19,5 +19,5 @@ let has_binary_pkg repo pack =
 
 (** Binary is already in the sandbox. Add this binary as a package in the local
     repo *)
-let add_binary_package repo bpack (install, opam) =
-  Repo.add_package repo.repo (Binary_package.package bpack) install opam
+let add_binary_package repo bpack (install_file, opam) =
+  Repo.add_package repo.repo (Binary_package.package bpack) ~install_file opam

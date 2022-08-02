@@ -101,17 +101,18 @@ let make_binary_package opam_opts ~ocaml_version sandbox repo bname tool =
   in
   Binary_repo.add_binary_package repo bname bpkg
 
+(** This version is used to select the highest available version of the tools
+    and also to override the [ocaml-system] package declaration in the sandbox. *)
+let installed_ocaml_version opam_opts =
+  Opam.Config.Var.get opam_opts "ocaml:compiler"
+
 let install opam_opts tools =
   let binary_repo_path =
     Fpath.(
       opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
   in
-  let* ovraw = Opam.Show.installed_version opam_opts "ocaml" in
-  (match ovraw with
-  | None -> Result.errorf "Cannot install tools: No switch is selected."
-  | Some s -> Ok s)
-  >>= fun ocaml_version ->
-  Binary_repo.init binary_repo_path >>= fun repo ->
+  let* ocaml_version = installed_ocaml_version opam_opts in
+  let* repo = Binary_repo.init binary_repo_path in
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
