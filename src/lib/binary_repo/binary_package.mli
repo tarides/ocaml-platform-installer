@@ -6,7 +6,7 @@ open Bos
 type full_name
 
 val binary_name :
-  ocaml_version:Ocaml_version.t ->
+  ocaml_version:string ->
   name:string ->
   ver:string ->
   pure_binary:bool ->
@@ -20,7 +20,7 @@ val package : full_name -> Package.full_name
 type binary_pkg = Package.Install_file.t * Package.Opam_file.t
 
 val make_binary_package :
-  ocaml_version:Ocaml_version.t ->
+  ocaml_version:string ->
   arch:string ->
   os_distribution:string ->
   prefix:Fpath.t ->

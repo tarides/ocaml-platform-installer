@@ -54,6 +54,7 @@ let verify_constraints version constraints =
 
 let best_available_version opam_opts ocaml_version name =
   let open Result.Syntax in
+  let* ocaml_version = OV.of_string ocaml_version in
   let+ versions = Opam.Show.available_versions opam_opts name in
   let version =
     versions
@@ -108,7 +109,7 @@ let install opam_opts tools =
   let* ovraw = Opam.Show.installed_version opam_opts "ocaml" in
   (match ovraw with
   | None -> Result.errorf "Cannot install tools: No switch is selected."
-  | Some s -> OV.of_string s)
+  | Some s -> Ok s)
   >>= fun ocaml_version ->
   Binary_repo.init binary_repo_path >>= fun repo ->
   (* [tools_to_build] is the list of tools that need to be built and placed in

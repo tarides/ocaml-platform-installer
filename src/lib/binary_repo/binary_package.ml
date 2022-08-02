@@ -44,7 +44,7 @@ type full_name = Package.full_name
 (** Name and version of the binary package corresponding to a given package. *)
 let binary_name ~ocaml_version ~name ~ver ~pure_binary =
   let name = if pure_binary then name else name ^ "+bin+platform" in
-  let ver = ver ^ "-ocaml" ^ Ocaml_version.to_string ocaml_version in
+  let ver = ver ^ "-ocaml" ^ ocaml_version in
   Package.v ~name ~ver
 
 let name = Package.name
@@ -63,7 +63,7 @@ let generate_opam_file ~arch ~os_distribution original_name bname pure_binary
         Atom (`Eq, "os-distribution", os_distribution) )
   in
   let depends =
-    [ ("ocaml", [ (`Eq, Ocaml_version.to_string ocaml_version) ]) ]
+    [ ("ocaml", [ (`Eq, ocaml_version) ]) ]
   in
   Package.Opam_file.v ~depends ~available ?conflicts ~url:archive_path
     ~pkg_name:(name bname) ()
