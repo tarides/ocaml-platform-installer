@@ -199,6 +199,9 @@ module Show = struct
     let+ res = parse res in
     List.map (function a, "--" -> (a, None) | a, s -> (a, Some s)) res
 
+  let opam_file opam_opts ~pkg =
+    Cmd.run_s opam_opts Bos.Cmd.(v "show" % pkg % "-f" % "opam-file")
+
   let depends opam_opts pkg_name =
     Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "depends:" % pkg_name)
 

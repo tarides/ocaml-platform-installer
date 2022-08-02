@@ -19,7 +19,7 @@ val add_package :
   t ->
   Package.full_name ->
   ?extra_files:(string * string) list ->
-  Package.Install_file.t ->
+  ?install_file:Package.Install_file.t ->
   Package.Opam_file.t ->
   (unit, 'e) OS.result
 (** [add_package opam_opts repo pkg ~extra_files install_file opam_file] adds a
