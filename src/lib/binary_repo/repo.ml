@@ -30,14 +30,21 @@ let has_pkg t pkg =
   | Ok r -> r
   | Error _ -> false
 
-let add_package t pkg install opam =
+let add_package t pkg ?(extra_files = []) install opam =
   let repo_path = repo_path_of_pkg t pkg in
   OS.Dir.create repo_path >>= fun _ ->
   OS.Dir.create Fpath.(repo_path / "files") >>= fun _ ->
-  OS.File.writef
-    Fpath.(repo_path / "files" / (Package.name pkg ^ ".install"))
-    "%s"
+  let write_extra_file file_name content =
+    OS.File.write Fpath.(repo_path / "files" / file_name) content
+  in
+  write_extra_file
+    (Package.name pkg ^ ".install")
     (Package.Install_file.to_string install)
+  >>= fun () ->
+  List.fold_left
+    (fun acc (path, contents) ->
+      acc >>= fun () -> write_extra_file path contents)
+    (Ok ()) extra_files
   >>= fun () ->
   OS.File.writef
     Fpath.(repo_path / "opam")

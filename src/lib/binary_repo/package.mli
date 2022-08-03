@@ -32,6 +32,7 @@ module Opam_file : sig
     t
 
   val to_string : t -> string
+  val of_string : string -> t
 end
 
 module Install_file : sig
