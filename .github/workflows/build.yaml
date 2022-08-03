@@ -50,6 +50,9 @@ jobs:
       - name: "Test: install"
         run: ./test/run_test.sh install
 
+      - name: "Test: ocaml5"
+        run: ./test/run_test.sh ocaml5
+
       - name: "Test: version"
         run: ./test/run_test.sh version
 
