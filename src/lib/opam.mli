@@ -57,7 +57,7 @@ end
 
 module Repository : sig
   val add :
-    GlobalOpts.t -> url:string -> string -> (unit, [> `Msg of string ]) result
+    GlobalOpts.t -> path:Fpath.t -> string -> (unit, [> `Msg of string ]) result
 
   val remove : GlobalOpts.t -> string -> (unit, [> `Msg of string ]) result
 end
