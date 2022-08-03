@@ -75,22 +75,7 @@ let make_sandbox_opts opam_opts ~compiler_path ~sandbox_root =
   let switch = Some (Fpath.to_string sandbox_root) in
   { opam_opts with Opam.GlobalOpts.switch; env = Some env }
 
-(** The [ocaml-system] package requires this option to be set to the right
-    version of OCaml to be installable (it has a solver constraint on it). *)
-let with_var_sys_ocaml_version opam_opts ~ocaml_version f =
-  let var = "sys-ocaml-version" and global = true in
-  let* prev_value = Opam.Config.Var.get_opt opam_opts var in
-  let restore_var () =
-    ignore
-      (match prev_value with
-      | Some x -> Opam.Config.Var.set opam_opts ~global var x
-      | None -> Opam.Config.Var.unset opam_opts ~global var)
-  in
-  let* () = Opam.Config.Var.set opam_opts ~global var ocaml_version in
-  Fun.protect ~finally:restore_var f
-
 let init opam_opts ~ocaml_version =
-  let ocaml_version = Ocaml_version.to_string ocaml_version in
   (* Directory in which to create the switch. *)
   let* sandbox_root = OS.Dir.tmp "ocaml-platform-sandbox-%s" in
   let* compiler_path =
@@ -106,8 +91,11 @@ let init opam_opts ~ocaml_version =
       Opam.Switch.create ~ocaml_version:None opam_opts
         (Fpath.to_string sandbox_root)
     in
-    with_var_sys_ocaml_version opam_opts ~ocaml_version (fun () ->
-        Opam.install sandbox_opts [ "ocaml-system" ])
+    let* repo = Sandbox_compiler_package.init opam_opts ocaml_version in
+    let* () =
+      Opam.Repository.add sandbox_opts ~path:(Repo.path repo) (Repo.name repo)
+    in
+    Opam.install sandbox_opts [ "ocaml-system" ]
   in
   let* prefix = Opam.Config.Var.get sandbox_opts "prefix" >>| Fpath.v in
   Ok { sandbox_opts; sandbox_root; prefix; compiler_path }

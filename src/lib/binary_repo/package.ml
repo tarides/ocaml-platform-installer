@@ -8,7 +8,7 @@ let name { name; ver = _ } = name
 let ver { name = _; ver } = ver
 
 module Opam_file = struct
-  type t = OpamParserTypes.FullPos.opamfile
+  type t = string
   type cmd = string list
   type dep = string * ([ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string) list
 
@@ -74,9 +74,11 @@ module Opam_file = struct
     let file_contents =
       [ opam_version; name ] @ install @ depends @ available @ conflicts @ url
     in
-    { OpamParserTypes.FullPos.file_contents; file_name }
+    OpamPrinter.FullPos.opamfile
+      { OpamParserTypes.FullPos.file_contents; file_name }
 
-  let to_string t = OpamPrinter.FullPos.opamfile t
+  let to_string t = t
+  let of_string t = t
 end
 
 module Install_file = struct
