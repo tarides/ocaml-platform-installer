@@ -63,7 +63,16 @@ let generate_opam_file ~arch ~os_distribution original_name bname pure_binary
         Atom (`Eq, "os-distribution", os_distribution) )
   in
   let depends =
-    [ ("ocaml", [ (`Eq, ocaml_version) ]) ]
+    let open Package.Opam_file in
+    [
+      Formula
+        ( `Or,
+          Formula
+            ( `Or,
+              Atom (`Eq, "ocaml-system", ocaml_version),
+              Atom (`Eq, "ocaml-variants", ocaml_version) ),
+          Atom (`Eq, "ocaml-base-compiler", ocaml_version) );
+    ]
   in
   Package.Opam_file.v ~depends ~available ?conflicts ~url:archive_path
     ~pkg_name:(name bname) ()
