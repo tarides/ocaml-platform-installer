@@ -15,7 +15,7 @@ module Binary_install_file = struct
         (v "share_root", "share_root");
         (v "doc" / pkg_name, "doc");
         (v "etc" / pkg_name, "etc");
-        (v "man" / pkg_name, "man");
+        (v "man", "man");
       ]
     in
     Option.value ~default:cf
