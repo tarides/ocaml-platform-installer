@@ -10,7 +10,6 @@ let ver { name = _; ver } = ver
 module Opam_file = struct
   type t = string
   type cmd = string list
-  type dep = string * ([ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string) list
 
   open OpamParserTypes.FullPos
 
@@ -30,20 +29,27 @@ module Opam_file = struct
   let ident s = with_pos (Ident s)
   let list l = with_pos @@ List (with_pos l)
   let option v l = with_pos @@ Option (v, with_pos l)
-  let prefix_relop p v = with_pos @@ Prefix_relop (with_pos p, v)
 
   type atom = [ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string * string
   type formula = Atom of atom | Formula of [ `And | `Or ] * formula * formula
 
-  let atom (op, a, b) = with_pos @@ Relop (with_pos op, ident a, string b)
+  let available_atom (op, a, b) =
+    with_pos @@ Relop (with_pos op, ident a, string b)
 
-  let rec formula f =
+  let dependency_atom (op, a, b) =
+    with_pos
+    @@ Option
+         ( string a,
+           with_pos [ with_pos @@ Prefix_relop (with_pos op, string b) ] )
+
+  let rec formula atom f =
     match f with
     | Atom a -> atom a
     | Formula (relop, g, h) ->
-        with_pos @@ Logop (with_pos relop, formula g, formula h)
+        with_pos @@ Logop (with_pos relop, formula atom g, formula atom h)
 
-  let v ?install ?depends ?conflicts ?available ?url ~pkg_name () =
+  let v ?install ?(depends : formula list option) ?conflicts ?available ?url
+      ~pkg_name () =
     let opam_version = "2.0" in
     let file_name = "opam" in
     let opam_version = variable "opam-version" (string opam_version) in
@@ -51,18 +57,14 @@ module Opam_file = struct
     let name = variable "name" (string pkg_name)
     and available =
       f_op_to_list available @@ fun available ->
-      variable "available" (formula available)
+      variable "available" (formula available_atom available)
     and install =
       f_op_to_list install @@ fun install ->
       variable "install"
         (list (List.map (fun e -> list (List.map string e)) install))
     and depends =
       f_op_to_list depends @@ fun depends ->
-      let depend (p, c) =
-        option (string p)
-          (List.map (fun (rel, cstr) -> prefix_relop rel (string cstr)) c)
-      in
-      variable "depends" (list (List.map depend depends))
+      variable "depends" (list (List.map (formula dependency_atom) depends))
     and conflicts =
       f_op_to_list conflicts @@ fun conflicts ->
       variable "conflicts" (list (List.map string conflicts))

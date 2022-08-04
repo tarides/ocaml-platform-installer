@@ -13,9 +13,6 @@ module Opam_file : sig
   type t
   type cmd = string list
 
-  type dep = string * ([ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string) list
-  (** [name * (operator * constraint) option]. *)
-
   type atom = [ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string * string
   (** [operator * var_name * constraint] *)
 
@@ -23,7 +20,7 @@ module Opam_file : sig
 
   val v :
     ?install:cmd list ->
-    ?depends:dep list ->
+    ?depends:formula list ->
     ?conflicts:string list ->
     ?available:formula ->
     ?url:Fpath.t ->
