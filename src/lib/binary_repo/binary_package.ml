@@ -79,28 +79,56 @@ let filter_exists files =
   in
   loop [] files
 
+(** Filters and add an unprefixed version to the input list. *)
+let add_unprefixed ~prefix paths =
+  List.filter_map
+    (fun p ->
+      Option.map
+        (fun p_no_prefix -> (p, p_no_prefix))
+        (Fpath.rem_prefix prefix p))
+    paths
+
 (** Remove paths starting with [lib/]. *)
-let remove_lib ~prefix paths = List.filter Fpath.(is_prefix (prefix / "lib")) paths
+let remove_lib ~prefix paths =
+  List.filter (fun p -> not (Fpath.(is_prefix (prefix / "lib")) p)) paths
 
 type binary_pkg = Package.Install_file.t * Package.Opam_file.t
+
+(** Create an archive in [archive_path]. The parameter paths gives for each file
+    its the original path and its path inside the archive (relative to a
+    toplevel folder). *)
+let create_archive paths archive_path =
+  let tar_root_name = "root" in
+  let using_tmp_dir tmp_package_dir () =
+    List.fold_left
+      (fun acc (path_to_file, path_in_archive) ->
+        acc >>= fun () ->
+        let dest_dir =
+          Fpath.(
+            tmp_package_dir / tar_root_name // fst (split_base path_in_archive))
+        in
+        OS.Cmd.run Cmd.(v "mkdir" % "-p" % p dest_dir) >>= fun () ->
+        OS.Cmd.run Cmd.(v "cp" % p path_to_file % p dest_dir))
+      (Ok ()) paths
+    >>= fun () ->
+    OS.Cmd.run
+      Cmd.(
+        v "tar" % "czf" % p archive_path % "-C" % p tmp_package_dir
+        % tar_root_name)
+  in
+  Result.join @@ OS.Dir.with_tmp "platform-package-to-tar-%s" using_tmp_dir ()
 
 (** Binary is already in the sandbox. Add this binary as a package in the local
     repo *)
 let make_binary_package ~ocaml_version ~arch ~os_distribution ~prefix ~files
     ~archive_path bname ~name:query_name ~pure_binary =
   filter_exists files >>= fun files ->
-  let paths = remove_lib ~prefix files in
-  let tar_input = List.map Fpath.to_string paths |> String.concat ~sep:"\n" in
-  OS.Cmd.(
-    in_string tar_input
-    |> run_in
-         Cmd.(
-           v "tar" % "czf" % p archive_path % "-C"
-           % p (Fpath.parent prefix)
-           % "-T" % "-"))
-  >>= fun () ->
+  let paths = files |> remove_lib ~prefix |> add_unprefixed ~prefix in
+  create_archive paths archive_path >>= fun () ->
   OS.File.exists archive_path >>= fun archive_created ->
-  let install = Binary_install_file.from_file_list query_name paths in
+  let install =
+    Binary_install_file.from_file_list query_name (List.map snd paths)
+  in
   let opam_file =
     generate_opam_file ~arch ~os_distribution query_name bname pure_binary
       archive_path ocaml_version
