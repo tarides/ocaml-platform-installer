@@ -2,6 +2,9 @@
 
 ## unreleased
 
+- Export the internal library `platform.binary_repo` (#82)
+  The library manages the cache repository.
+- Fix the fact that man pages files were not included (#82)
 - Fix error line appearing in reverse order, and show error in exection even in
   `-v` verbose mode (#84).
 - Add an `available` field with `arch` and `os-distribution` in the opam files
