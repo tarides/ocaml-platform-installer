@@ -9,7 +9,13 @@ This installer installs all the tools of the Platform in a switch and aims at of
 
 ## Trying the Platform
 
-To install the `ocaml-platform` binary, run the installer script as `root`:
+To install the `ocaml-platform` binary, you'll need the following dependencies: `bzip2`, `make`, `gcc`, `bubblewrap`, `patch`, `curl` and `unzip`. In most architecture, you can install them using your package manager, for instance:
+
+``` sh
+sudo apt install bzip2 make gcc bubblewrap rsync patch curl unzip
+```
+
+You can now run the installer script as `root`:
 
 ```sh
 sudo bash < <(curl -sL https://github.com/tarides/ocaml-platform-installer/releases/latest/download/installer.sh)
