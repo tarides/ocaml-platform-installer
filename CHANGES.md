@@ -2,6 +2,8 @@
 
 ## unreleased
 
+- Fix error line appearing in reverse order, and show error in exection even in
+  `-v` verbose mode (#84).
 - Add an `available` field with `arch` and `os-distribution` in the opam files
   of the binary package (#74)
 - Improve logging behaviour in case of user interrupt (#80)
