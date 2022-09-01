@@ -54,7 +54,7 @@ module Cmd = struct
     let s_err = String.concat ~sep:"\n" res_err in
     (match s_err with
     | "" -> ()
-    | s -> Logs.debug (fun m -> m "Error in execution: %s" s));
+    | s -> Logs.info (fun m -> m "Error in %s:\n%s" cmd_s s));
     let result, status, success =
       (res, Unix.close_process_full channels) |> out_wrap
     in
