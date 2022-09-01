@@ -116,4 +116,4 @@ let read_and_print ~log_height ic ic_err (out_init, out_acc, out_finish) =
   Lwt_main.run
     (let+ acc = process_stdout ~log_line out_init
      and+ acc_err = process_stderr ~log_line [] in
-     (out_finish acc, acc_err))
+     (out_finish acc, List.rev acc_err))
