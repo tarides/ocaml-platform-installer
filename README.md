@@ -9,7 +9,9 @@ This installer installs all the tools of the Platform in a switch and aims at of
 
 ## Trying the Platform
 
-To install the `ocaml-platform` binary, you'll need the following dependencies: `bzip2`, `make`, `gcc`, `bubblewrap`, `patch`, `curl` and `unzip`. In most architecture, you can install them using your package manager, for instance:
+The official guide [Up and Running with OCaml](https://ocaml.org/docs/up-and-running) explains how to set up a complete work environment for your OCaml projects. It is a necessary reading for every OCaml newcomer.
+
+This set-up goes through several steps, some of which have to be redone for every new project. The `ocaml-platform` binary, automates and speeds those steps. However, you still need first to install the few dependencies of the OCaml environment, such as a C compiler (such as `gcc`) and other system tools: `bzip2`, `make`, `bubblewrap`, `patch`, `curl` and `unzip`. In most architecture, you can install them using your package manager, for example on Ubuntu or Debian:
 
 ``` sh
 sudo apt install bzip2 make gcc bubblewrap rsync patch curl unzip
@@ -25,7 +27,7 @@ Don't hesitate to have a look at what the script does.
 In a nutshell, the script will install a static binary into `/usr/local/bin/ocaml-platform` as well as the `opam` binary if it isn't already installed.
 Currently, only Linux (both amd64 and arm64) and macOS (only amd64) are supported. macOS arm64 requires Rosetta to be installed. We plan on adding more targets soon.
 
-Then, to install the Platform tools inside your opam switch:
+Then, to install the Platform tools inside your opam switch (if you don't know what is a switch, read the [Up and running with OCaml guide](https://ocaml.org/docs/up-and-running)):
 
 ```
 ocaml-platform
