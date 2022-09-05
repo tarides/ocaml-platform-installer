@@ -48,27 +48,35 @@ jobs:
         run: docker image ls
 
       - name: "Test: install"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh install
 
       - name: "Test: ocaml5"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh ocaml5
 
       - name: "Test: version"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh version
 
       - name: "Test: install-in-small-project"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh small-project install-in-small-project
 
       - name: "Test: odoc"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh odoc
 
       - name: "Test: ocamlformat"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh ocamlformat
 
       - name: "Test: reinstall_cached"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh reinstall_cached
 
       - name: "Test: reinstall_ocamlformat"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh reinstall_ocamlformat
 
       - name: Build release tarball
