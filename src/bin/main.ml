@@ -69,8 +69,6 @@ let main () =
         `Noblank;
         `P "- LSP server: $(b,ocaml-lsp)";
         `Noblank;
-        `P "- REPL: $(b,utop)";
-        `Noblank;
         `P "- Editor helper: $(b,merlin)";
         `P
           "You can install the OCaml Platform tools in your current $(b,opam) \
