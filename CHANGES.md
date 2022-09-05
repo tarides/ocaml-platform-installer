@@ -9,6 +9,9 @@
 - Fix the fact that man pages files were not included (#82)
 - Fix error line appearing in reverse order, and show error in exection even in
   `-v` verbose mode (#84).
+
+## 0.2.0 (2022-09-01)
+
 - Add an `available` field with `arch` and `os-distribution` in the opam files
   of the binary package (#74)
 - Improve logging behaviour in case of user interrupt (#80)
