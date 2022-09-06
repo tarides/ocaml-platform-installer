@@ -2,6 +2,8 @@
 
 ## unreleased
 
+## 0.3.0 (2022-09-05)
+
 - Add support for versions of ocaml where an `ocaml-system` package is not
   provided in the default repo, such as for instance, OCaml 5! (#83)
 - Export the internal library `platform.binary_repo` (#82)
