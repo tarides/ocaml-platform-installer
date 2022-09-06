@@ -2,6 +2,9 @@
 
 ## unreleased
 
+- Continue installing if a tool is not available (#90)
+  Instead of stopping for complaining.
+
 ## 0.3.0 (2022-09-05)
 
 - Add support for versions of ocaml where an `ocaml-system` package is not
