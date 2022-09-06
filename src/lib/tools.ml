@@ -52,38 +52,40 @@ let verify_constraint version (op, constraint_version) =
 let verify_constraints version constraints =
   List.for_all (verify_constraint version) constraints
 
+(** Find the highest version of a package compatible with the given version of
+    OCaml. Returns [None] if no version match. *)
 let best_available_version opam_opts ocaml_version name =
   let open Result.Syntax in
   let* ocaml_version = OV.of_string ocaml_version in
   let+ versions = Opam.Show.available_versions opam_opts name in
-  let version =
-    versions
-    |> List.find (fun version ->
-           let ocaml_depends =
-             let+ depends =
-               Opam.Show.depends opam_opts (name ^ "." ^ version)
+  versions
+  |> List.find_opt (fun version ->
+         let ocaml_depends =
+           let+ depends = Opam.Show.depends opam_opts (name ^ "." ^ version) in
+           List.find_opt (String.is_prefix ~affix:"\"ocaml\"") depends
+         in
+         match ocaml_depends with
+         | Ok (Some ocaml_constraint) ->
+             let result =
+               parse_constraints ocaml_constraint >>| fun constraints ->
+               verify_constraints ocaml_version constraints
              in
-             List.find_opt (String.is_prefix ~affix:"\"ocaml\"") depends
-           in
-           match ocaml_depends with
-           | Ok (Some ocaml_constraint) ->
-               let result =
-                 parse_constraints ocaml_constraint >>| fun constraints ->
-                 verify_constraints ocaml_version constraints
-               in
-               Result.value ~default:false result
-           | Ok None -> true
-           | _ -> false)
-  in
-  version
+             Result.value ~default:false result
+         | Ok None -> true
+         | _ -> false)
 
+(** The version of a tool that should be installed. Might returns the error
+    [`Not_found]. *)
 let best_version_of_tool opam_opts ocaml_version tool =
   (match tool.version with
-  | Some ver -> Ok ver
+  | Some _ as ver -> Ok ver
   | None -> best_available_version opam_opts ocaml_version tool.name)
-  >>| fun ver ->
-  Binary_package.binary_name ~ocaml_version ~name:tool.name ~ver
-    ~pure_binary:tool.pure_binary
+  >>= function
+  | Some ver ->
+      Ok
+        (Binary_package.binary_name ~ocaml_version ~name:tool.name ~ver
+           ~pure_binary:tool.pure_binary)
+  | None -> Error `Not_found
 
 let make_binary_package opam_opts ~ocaml_version sandbox repo bname tool =
   let { name; pure_binary; _ } = tool in
@@ -120,29 +122,38 @@ let install opam_opts tools =
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
   Logs.app (fun m -> m "* Inferring tools version...");
-  let* tools_to_build, tools_to_install =
+  let* tools_to_build, tools_to_install, tools_not_installed =
     let* version_list =
       Opam.Show.installed_versions opam_opts
         (List.map (fun tool -> tool.name) tools)
     in
     Result.List.fold_left
-      (fun (to_build, to_install) tool ->
+      (fun ((to_build, to_install, not_installed) as acc) tool ->
         let pkg_version = List.assoc_opt tool.name version_list in
         match pkg_version with
         | Some (Some _) ->
             Logs.app (fun m -> m "  -> %s is already installed" tool.name);
-            Ok (to_build, to_install)
-        | _ ->
-            let+ bname = best_version_of_tool opam_opts ocaml_version tool in
-            Logs.app (fun m ->
-                m "  -> %s will be installed as %s" tool.name
-                  (Binary_package.to_string bname));
-            let to_build =
-              if Binary_repo.has_binary_pkg repo bname then to_build
-              else (tool, bname) :: to_build
-            in
-            (to_build, Binary_package.to_string bname :: to_install))
-      ([], []) tools
+            Ok acc
+        | _ -> (
+            match best_version_of_tool opam_opts ocaml_version tool with
+            | Ok bname ->
+                Logs.app (fun m ->
+                    m "  -> %s will be installed as %s" tool.name
+                      (Binary_package.to_string bname));
+                let to_build =
+                  if Binary_repo.has_binary_pkg repo bname then to_build
+                  else (tool, bname) :: to_build
+                in
+                Ok ( to_build,
+                  Binary_package.to_string bname :: to_install,
+                  not_installed )
+            | Error `Not_found ->
+                Logs.warn (fun m ->
+                    m "%s cannot be installed with OCaml %s" tool.name
+                      ocaml_version);
+                Ok (to_build, to_install, tool.name :: not_installed)
+            | Error (`Msg _) as err -> err))
+      ([], [], []) tools
   in
   (match tools_to_build with
   | [] -> Ok ()
@@ -161,7 +172,7 @@ let install opam_opts tools =
             ()
             (List.mapi (fun i s -> (i, s)) tools_to_build)))
   >>= fun () ->
-  match tools_to_install with
+  (match tools_to_install with
   | [] ->
       Logs.app (fun m -> m "  -> All tools are already installed");
       Ok ()
@@ -179,7 +190,14 @@ let install opam_opts tools =
           m
             "  -> All tools installed. For more information on the platform \
              tools, run `ocaml-platform --help`");
-      Logs.app (fun m -> m "* Success.")
+      Logs.app (fun m -> m "* Success."))
+  >>= fun () ->
+  if tools_not_installed <> [] then
+    Logs.warn (fun m ->
+        m "The following tools haven't been installed: %a"
+          Fmt.(list ~sep:(any ", ") string)
+          tools_not_installed);
+  Ok ()
 
 let find_ocamlformat_version () =
   match OS.File.read_lines (Fpath.v ".ocamlformat") with
