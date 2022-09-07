@@ -45,7 +45,9 @@ module Cmd = struct
         | None -> OS.Env.current ()
         | Some env -> Ok env
       in
-      env |> String.Map.to_seq
+      env
+      |> String.Map.add "OPAMCLI" "2.0"
+      |> String.Map.to_seq
       |> Seq.map (fun (a, b) -> a ^ "=" ^ b)
       |> Array.of_seq
     in
