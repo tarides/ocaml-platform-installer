@@ -188,8 +188,8 @@ let install opam_opts tools =
       in
       Logs.app (fun m ->
           m
-            "  -> All tools installed. For more information on the platform \
-             tools, run `ocaml-platform --help`");
+            "  -> The tools have been installed. For more information on the \
+             platform tools, run `ocaml-platform --help`");
       Logs.app (fun m -> m "* Success."))
   >>= fun () ->
   if tools_not_installed <> [] then
