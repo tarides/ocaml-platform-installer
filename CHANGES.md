@@ -2,6 +2,7 @@
 
 ## unreleased
 
+- Log before initialising Opam (#93)
 - Use OPAMCLI environment variable set to "2.0" to force the CLI version of
   future opam version. (#92)
 - Continue installing if a tool is not available (#90)
