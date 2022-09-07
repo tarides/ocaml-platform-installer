@@ -29,6 +29,8 @@
  (description
   "The OCaml Platform represents the best way for developers, both new and old, to write software in OCaml. It combines a coherent set of tools, documentation and resources to be productive with OCaml.")
  (depends
+  (ocaml
+   (>= 4.10.0))
   ocaml-version
   angstrom
   (cmdliner

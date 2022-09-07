@@ -22,6 +22,7 @@ homepage: "https://github.com/tarides/ocaml-platform"
 bug-reports: "https://github.com/tarides/ocaml-platform/issues"
 depends: [
   "dune" {>= "3.0"}
+  "ocaml" {>= "4.10.0"}
   "ocaml-version"
   "angstrom"
   "cmdliner" {>= "1.1.0"}
