@@ -144,9 +144,10 @@ let install opam_opts tools =
                   if Binary_repo.has_binary_pkg repo bname then to_build
                   else (tool, bname) :: to_build
                 in
-                Ok ( to_build,
-                  Binary_package.to_string bname :: to_install,
-                  not_installed )
+                Ok
+                  ( to_build,
+                    Binary_package.to_string bname :: to_install,
+                    not_installed )
             | Error `Not_found ->
                 Logs.warn (fun m ->
                     m "%s cannot be installed with OCaml %s" tool.name

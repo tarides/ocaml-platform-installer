@@ -232,6 +232,10 @@ let check_init () =
   let open Result.Syntax in
   let* exists = Bos.OS.Dir.exists root in
   if exists then Ok ()
-  else
+  else (
+    Logs.app (fun m ->
+        m
+          "* Initialising Opam before the first use, this might take some \
+           time...");
     let cmd = Bos.Cmd.(v "init") in
-    Cmd.run GlobalOpts.default cmd
+    Cmd.run GlobalOpts.default cmd)
