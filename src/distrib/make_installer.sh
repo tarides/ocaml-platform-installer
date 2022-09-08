@@ -65,7 +65,7 @@ check_sha512()
 {
   if command -v sha512sum >/dev/null
   then sha512sum --check --quiet - <<<"\$1 \$2"
-  else shasum -a 512 --check --quiet - <<<"\$1 \$2"
+  else shasum -a 512 --check --quiet - <<<"\$1  \$2"
   fi
 }
 
