@@ -21,7 +21,7 @@ conflict-class: "ocaml-core-compiler"
 flags: compiler
 build: ["ocaml" "gen_ocaml_config.ml"]
 substs: "gen_ocaml_config.ml"
-extra-files: ["gen_ocaml_config.ml.in" "md5=093e7bec1ec95f9e4c6a313d73c5d840"]
+extra-files: ["gen_ocaml_config.ml.in" "md5=c2a459eda2f5a95e67cd4114447b8a1b"]
 |}
 
 let extra_file =
@@ -35,15 +35,6 @@ let extra_file =
       else
         (s, "") in
     base ^ "c" ^ suffix in
-  if Sys.ocaml_version <> "%{_:version}%" then
-    (Printf.eprintf
-       "ERROR: The compiler found at %%s has version %%s,\n\
-        and this package requires %{_:version}%.\n\
-        You should use e.g. 'opam switch create %{_:name}%.%%s' \
-        instead."
-       ocamlc Sys.ocaml_version Sys.ocaml_version;
-     exit 1)
-  else
   let ocamlc_digest = Digest.to_hex (Digest.file ocamlc) in
   let libdir =
     if Sys.command (ocamlc^" -where > %{_:name}%.config") = 0 then
