@@ -2,6 +2,8 @@
 
 ## unreleased
 
+- Display version to be installed and whether a package needs to be built in the
+  logs (#103)
 - Log before initialising Opam (#93)
 - Use OPAMCLI environment variable set to "2.0" to force the CLI version of
   future opam version. (#92)
