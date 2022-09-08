@@ -81,10 +81,7 @@ let best_version_of_tool opam_opts ocaml_version tool =
   | Some _ as ver -> Ok ver
   | None -> best_available_version opam_opts ocaml_version tool.name)
   >>= function
-  | Some ver ->
-      Ok
-        (Binary_package.binary_name ~ocaml_version ~name:tool.name ~ver
-           ~pure_binary:tool.pure_binary)
+  | Some ver -> Ok ver
   | None -> Error `Not_found
 
 let make_binary_package opam_opts ~ocaml_version sandbox repo bname tool =
@@ -136,14 +133,18 @@ let install opam_opts tools =
             Ok acc
         | _ -> (
             match best_version_of_tool opam_opts ocaml_version tool with
-            | Ok bname ->
-                Logs.app (fun m ->
-                    m "  -> %s will be installed as %s" tool.name
-                      (Binary_package.to_string bname));
-                let to_build =
-                  if Binary_repo.has_binary_pkg repo bname then to_build
-                  else (tool, bname) :: to_build
+            | Ok best_version ->
+                let bname =
+                  Binary_package.binary_name ~ocaml_version ~name:tool.name
+                    ~ver:best_version ~pure_binary:tool.pure_binary
                 in
+                let to_build, action_s =
+                  if Binary_repo.has_binary_pkg repo bname then
+                    (to_build, "installed from cache")
+                  else ((tool, bname) :: to_build, "built from source")
+                in
+                Logs.app (fun m ->
+                    m "  -> %s.%s will be %s" tool.name best_version action_s);
                 Ok
                   ( to_build,
                     Binary_package.to_string bname :: to_install,
