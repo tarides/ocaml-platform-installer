@@ -96,7 +96,7 @@ install_opam ()
   check_sha512 "\$sha512" opam
 
   echo "=> Install into \$PREFIX/bin"
-  install -m755 "opam" "\$PREFIX/bin"
+  sudo install -m755 "opam" "\$PREFIX/bin"
 }
 
 cd "\$(mktemp -d)"
@@ -107,10 +107,10 @@ check_sha512 "\$sha512" "\$archive"
 tar xf "\$archive"
 
 echo "=> Install into \$PREFIX/bin"
-install -m755 bin/* "\$PREFIX/bin"
+sudo install -m755 bin/* "\$PREFIX/bin"
 
 # Install Opam if necessary
-if ! [[ -e \$PREFIX/bin/opam ]]; then
+if ! command -v opam &> /dev/null;  then
   echo "Opam is not installed, installing."
   install_opam
 fi

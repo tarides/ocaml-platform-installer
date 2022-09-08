@@ -17,10 +17,10 @@ This set-up goes through several steps, some of which have to be redone for ever
 sudo apt install bzip2 make gcc bubblewrap rsync patch curl unzip
 ```
 
-You can now run the installer script as `root`:
+You can now run the installer script (which will call `sudo` for the final installation step):
 
 ```sh
-sudo bash < <(curl -sL https://github.com/tarides/ocaml-platform-installer/releases/latest/download/installer.sh)
+bash < <(curl -sL https://github.com/tarides/ocaml-platform-installer/releases/latest/download/installer.sh)
 ```
 
 Don't hesitate to have a look at what the script does.
