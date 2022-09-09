@@ -86,6 +86,10 @@ module Show : sig
     GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
 end
 
+module Exec : sig
+  val run : GlobalOpts.t -> Bos.Cmd.t -> (string, [> Rresult.R.msg ]) result
+end
+
 val install : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
 (** [install opam_opts atoms] installs the [atoms] into the current local
     switch. If opam has not been initialised, or if their is no local switch

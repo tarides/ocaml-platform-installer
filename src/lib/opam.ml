@@ -23,7 +23,7 @@ module GlobalOpts = struct
 end
 
 module Cmd = struct
-  let t opam_opts cmd =
+  let t opam_opts sub_cmd arguments =
     let open Bos.Cmd in
     let switch_cmd =
       match opam_opts.GlobalOpts.switch with
@@ -32,11 +32,11 @@ module Cmd = struct
     in
     let root_cmd = v "--root" % p opam_opts.root in
     Bos.Cmd.(
-      v "opam" %% cmd % "--yes" % "-q" % "--color=never" %% switch_cmd
-      %% root_cmd)
+      v "opam" % sub_cmd % "--yes" % "-q" % "--color=never" %% switch_cmd
+      %% root_cmd %% arguments)
 
-  let run_gen opam_opts (out_acc, out_wrap) cmd =
-    let cmd = t opam_opts cmd in
+  let run_gen opam_opts (out_acc, out_wrap) sub_cmd arguments =
+    let cmd = t opam_opts sub_cmd arguments in
     let cmd_s = Bos.Cmd.to_string cmd in
     Logs.debug (fun m -> m "Running: %s" cmd_s);
     let* env =
@@ -103,27 +103,27 @@ module Config = struct
     (* TODO: 'opam config' is deprecated in Opam 2.1 in favor of 'opam var'. *)
     let get opam_opts name =
       (* 2.1: "var" % name *)
-      Cmd.run_s opam_opts Bos.Cmd.(v "config" % "var" % name)
+      Cmd.run_s opam_opts "config" Bos.Cmd.(v "var" % name)
 
     let get_opt opam_opts name =
       (* 2.1: "var" % name *)
-      Cmd.run_s_opt opam_opts Bos.Cmd.(v "config" % "var" % name)
+      Cmd.run_s_opt opam_opts "config" Bos.Cmd.(v "var" % name)
 
     let set opam_opts ~global name value =
       (* 2.1: "var" % "--global" % (name ^ "=" ^ value) *)
       let verb = if global then "set-global" else "set" in
-      Cmd.run opam_opts Bos.Cmd.(v "config" % verb % name % value)
+      Cmd.run opam_opts "config" Bos.Cmd.(v verb % name % value)
 
     let unset opam_opts ~global name =
       (* 2.1: "var" % "--global" % (name ^ "=") *)
       let verb = if global then "unset-global" else "unset" in
-      Cmd.run opam_opts Bos.Cmd.(v "config" % verb % name)
+      Cmd.run opam_opts "config" Bos.Cmd.(v verb % name)
   end
 end
 
 module Switch = struct
   let list opam_opts =
-    Cmd.run_l opam_opts Bos.Cmd.(v "switch" % "list" % "--short")
+    Cmd.run_l opam_opts "switch" Bos.Cmd.(v "list" % "--short")
 
   let create ~ocaml_version opam_opts switch_name =
     let invariant_args =
@@ -132,44 +132,39 @@ module Switch = struct
           Bos.Cmd.(v ("ocaml-base-compiler." ^ ocaml_version))
       | None -> Bos.Cmd.(v "--empty")
     in
-    Cmd.run opam_opts
-      Bos.Cmd.(
-        v "switch" % "create" % "--no-switch" % switch_name %% invariant_args)
+    Cmd.run opam_opts "switch"
+      Bos.Cmd.(v "create" % "--no-switch" % switch_name %% invariant_args)
 
   let remove opam_opts name =
-    Cmd.run_s opam_opts Bos.Cmd.(v "switch" % "remove" % name)
+    Cmd.run_s opam_opts "switch" Bos.Cmd.(v "remove" % name)
 end
 
 module Repository = struct
   let add opam_opts ~path name =
-    Cmd.run opam_opts
-      Bos.Cmd.(
-        v "repository" % "add" % "--this-switch" % "-k" % "local" % name
-        % p path)
+    Cmd.run opam_opts "repository"
+      Bos.Cmd.(v "add" % "--this-switch" % "-k" % "local" % name % p path)
 
   let remove opam_opts name =
-    Cmd.run opam_opts
-      Bos.Cmd.(v "repository" % "--this-switch" % "remove" % name)
+    Cmd.run opam_opts "repository" Bos.Cmd.(v "--this-switch" % "remove" % name)
 end
 
 module Show = struct
   let list_files opam_opts pkg_name =
-    Cmd.run_l opam_opts Bos.Cmd.(v "show" % "--list-files" % pkg_name)
+    Cmd.run_l opam_opts "show" Bos.Cmd.(v "--list-files" % pkg_name)
     >>| List.filter (fun l -> not (String.equal "" l))
 
   let available_versions opam_opts pkg_name =
     let open Result.Syntax in
     let+ output =
-      Cmd.run_s opam_opts
-        Bos.Cmd.(v "show" % "-f" % "available-versions" % pkg_name)
+      Cmd.run_s opam_opts "show"
+        Bos.Cmd.(v "-f" % "available-versions" % pkg_name)
     in
     Astring.String.cuts ~sep:"  " output |> List.rev
 
   let installed_version opam_opts pkg_name =
     match
-      Cmd.run_s opam_opts
-        Bos.Cmd.(
-          v "show" % pkg_name % "-f" % "installed-version" % "--normalise")
+      Cmd.run_s opam_opts "show"
+        Bos.Cmd.(v pkg_name % "-f" % "installed-version" % "--normalise")
     with
     | Ok "--" -> Ok None
     | Ok s -> Ok (Some s)
@@ -193,35 +188,34 @@ module Show = struct
         | Error e -> Result.errorf "Error in parsing installed versions: %s" e
     in
     let* res =
-      Cmd.run_s opam_opts
+      Cmd.run_s opam_opts "show"
         Bos.Cmd.(
-          v "show" %% of_list pkg_names % "-f" % "name,installed-version"
-          % "--normalise")
+          of_list pkg_names % "-f" % "name,installed-version" % "--normalise")
     in
     let+ res = parse res in
     List.map (function a, "--" -> (a, None) | a, s -> (a, Some s)) res
 
   let opam_file opam_opts ~pkg =
-    Cmd.run_s opam_opts Bos.Cmd.(v "show" % pkg % "-f" % "opam-file")
+    Cmd.run_s opam_opts "show" Bos.Cmd.(v pkg % "-f" % "opam-file")
 
   let depends opam_opts pkg_name =
-    Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "depends:" % pkg_name)
+    Cmd.run_l opam_opts "show" Bos.Cmd.(v "-f" % "depends:" % pkg_name)
 
   let version opam_opts pkg_name =
-    Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "version" % pkg_name)
+    Cmd.run_l opam_opts "show" Bos.Cmd.(v "-f" % "version" % pkg_name)
 end
 
-let install opam_opts pkgs =
-  Cmd.run opam_opts Bos.Cmd.(v "install" %% of_list pkgs)
+module Exec = struct
+  let run opam_opts cmd = Cmd.run_s opam_opts "exec" Bos.Cmd.(v "--" %% cmd)
+end
 
-let remove opam_opts pkgs =
-  Cmd.run opam_opts Bos.Cmd.(v "remove" %% of_list pkgs)
+let install opam_opts pkgs = Cmd.run opam_opts "install" Bos.Cmd.(of_list pkgs)
+let remove opam_opts pkgs = Cmd.run opam_opts "remove" Bos.Cmd.(of_list pkgs)
 
 let update opam_opts pkgs =
-  Cmd.run opam_opts Bos.Cmd.(v "update" % "--no-auto-upgrade" %% of_list pkgs)
+  Cmd.run opam_opts "update" Bos.Cmd.(v "--no-auto-upgrade" %% of_list pkgs)
 
-let upgrade opam_opts pkgs =
-  Cmd.run opam_opts Bos.Cmd.(v "upgrade" %% of_list pkgs)
+let upgrade opam_opts pkgs = Cmd.run opam_opts "upgrade" Bos.Cmd.(of_list pkgs)
 
 let root =
   Bos.OS.Env.var "OPAMROOT" |> Option.map Fpath.v
@@ -237,5 +231,5 @@ let check_init () =
         m
           "* Initialising Opam before the first use, this might take some \
            time...");
-    let cmd = Bos.Cmd.(v "init") in
-    Cmd.run GlobalOpts.default cmd)
+    let cmd = Bos.Cmd.(empty) in
+    Cmd.run GlobalOpts.default "init" cmd)
