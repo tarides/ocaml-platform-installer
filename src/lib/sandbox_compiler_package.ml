@@ -91,11 +91,24 @@ let fix_ocaml_constraints opam_file ~ocaml_version =
   let name_is_ocaml t =
     match t.pelem with String "ocaml-system" -> true | _ -> false
   in
+  let simple_ocaml_version = remove_alpha_plus_suffix ocaml_version in
+  let next_ocaml_version =      (* TODO *)
+    match String.cut ~rev:true ~sep:"." simple_ocaml_version with
+    | Some (major, minor) ->
+        major ^ "." ^ (minor |> int_of_string |> ( + ) 1 |> string_of_int)
+    | None -> simple_ocaml_version
+  in
+
   let rec fix_depend = function
     | Option (name, _args) when name_is_ocaml name ->
-        let cnstr =
-          Prefix_relop (fake_pos `Eq, fake_pos (String ocaml_version))
+        let cnstr1 =
+          Prefix_relop
+            (fake_pos `Geq, fake_pos (String (simple_ocaml_version ^ "~")))
+        and cnstr2 =
+          Prefix_relop
+            (fake_pos `Leq, fake_pos (String (next_ocaml_version ^ "~")))
         in
+        let cnstr = Logop (fake_pos `And, fake_pos cnstr1, fake_pos cnstr2) in
         Option (name, fake_pos [ fake_pos cnstr ])
     | Logop (op, left, right) ->
         Logop (op, with_pos fix_depend left, with_pos fix_depend right)
