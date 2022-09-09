@@ -95,7 +95,7 @@ let init opam_opts ~ocaml_version =
     let* () =
       Opam.Repository.add sandbox_opts ~path:(Repo.path repo) (Repo.name repo)
     in
-    Opam.install sandbox_opts [ "ocaml-system" ]
+    Opam.install sandbox_opts [ "ocaml-system." ^ ocaml_version ]
   in
   let* prefix = Opam.Config.Var.get sandbox_opts "prefix" >>| Fpath.v in
   Ok { sandbox_opts; sandbox_root; prefix; compiler_path }

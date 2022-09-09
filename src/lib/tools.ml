@@ -103,10 +103,7 @@ let make_binary_package opam_opts ~ocaml_version sandbox repo bname tool =
 (** This version is used to select the highest available version of the tools
     and also to override the [ocaml-system] package declaration in the sandbox. *)
 let installed_ocaml_version opam_opts =
-  let* ocaml_comp_ver = Opam.Config.Var.get opam_opts "ocaml:compiler" in
-  match ocaml_comp_ver with
-  | "system" -> Opam.Config.Var.get opam_opts "ocaml-system:version"
-  | o -> Ok o
+  Opam.Exec.run opam_opts Bos.Cmd.(v "ocamlc" % "--version")
 
 let install opam_opts tools =
   let binary_repo_path =

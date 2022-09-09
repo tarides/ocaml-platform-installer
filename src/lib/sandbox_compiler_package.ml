@@ -70,9 +70,12 @@ let extra_file =
   close_out oc
 |}
 
-(** The [~alpha...] suffix needs to be removed when overriding the [ocaml]
-    package. *)
-let remove_alpha_suffix ver =
+(** The [~alpha...] or [+...] or both suffixes needs to be removed when
+    overriding the [ocaml] package. *)
+let remove_alpha_plus_suffix ver =
+  let ver =
+    match String.cut ~sep:"+" ver with Some (pre, _) -> pre | None -> ver
+  in
   match String.cut ~sep:"~" ver with Some (pre, _) -> pre | None -> ver
 
 (** Lookup in the selected switch. *)
@@ -131,7 +134,9 @@ let init_pkg_ocaml_system repo ~ocaml_version =
     which disallow [~] suffixes. The [ocaml] package itself must not use a [~]
     suffix. *)
 let init_pkg_ocaml opam_opts repo ~ocaml_version =
-  let pkg = Package.v ~name:"ocaml" ~ver:(remove_alpha_suffix ocaml_version) in
+  let pkg =
+    Package.v ~name:"ocaml" ~ver:(remove_alpha_plus_suffix ocaml_version)
+  in
   if Repo.has_pkg repo pkg then Ok ()
   else
     let* opam_file = lookup_ocaml_descr opam_opts in
