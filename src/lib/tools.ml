@@ -100,20 +100,42 @@ let make_binary_package opam_opts ~ocaml_version sandbox repo bname tool =
   in
   Binary_repo.add_binary_package repo bname bpkg
 
-(** This version is used to select the highest available version of the tools
-    and also to override the [ocaml-system] package declaration in the sandbox. *)
-let installed_ocaml_version opam_opts =
-  let* ocaml_comp_ver = Opam.Config.Var.get opam_opts "ocaml:compiler" in
-  match ocaml_comp_ver with
-  | "system" -> Opam.Config.Var.get opam_opts "ocaml-system:version"
-  | o -> Ok o
+(** This function returns the package corresponding to the current compiler. The
+    package name will be used to check if we can use the cache. The version will
+    be used to select the highest available version of the tools and also to
+    override the [ocaml-system] package declaration in the sandbox. *)
+let get_compiler_pkg opam_opts =
+  let* compiler_list = Opam.List_.compilers opam_opts () in
+  match compiler_list with
+  | name :: _ ->
+      let+ ver = Opam.Show.version opam_opts name in
+      Package.v ~name ~ver
+  | [] -> Error (`Msg "No compiler installed in your current switch.")
+
+(** We only use the cache when it is a regular unpinned compiler *)
+let should_use_cache opam_opts compiler_pkg =
+  match Package.name compiler_pkg with
+  | ("ocaml-system" | "ocaml-variants" | "ocaml-base-compiler") as name -> (
+      let+ pin = Opam.Show.pin opam_opts name in
+      match pin with
+      | "" -> true
+      | _ ->
+          Logs.app (fun m ->
+              m "* Pinned compiler detected. No cache will be used.");
+          false)
+  | _ ->
+      Logs.app (fun m ->
+          m "* Custom compiler package detected. No cache will be used.");
+      Ok false
 
 let install opam_opts tools =
   let binary_repo_path =
     Fpath.(
       opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
   in
-  let* ocaml_version = installed_ocaml_version opam_opts in
+  let* compiler_pkg = get_compiler_pkg opam_opts in
+  let* should_use_cache = should_use_cache opam_opts compiler_pkg in
+  let ocaml_version = Package.ver compiler_pkg in
   let* repo = Binary_repo.init binary_repo_path in
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
@@ -139,8 +161,8 @@ let install opam_opts tools =
                     ~ver:best_version ~pure_binary:tool.pure_binary
                 in
                 let to_build, action_s =
-                  if Binary_repo.has_binary_pkg repo bname then
-                    (to_build, "installed from cache")
+                  if Binary_repo.has_binary_pkg repo bname && should_use_cache
+                  then (to_build, "installed from cache")
                   else ((tool, bname) :: to_build, "built from source")
                 in
                 Logs.app (fun m ->

@@ -83,7 +83,15 @@ module Show : sig
     GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
 
   val version :
-    GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
+    GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
+
+  val pin :
+    GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
+end
+
+module List_ : sig
+  val compilers :
+    GlobalOpts.t -> unit -> (string list, [> `Msg of string ]) result
 end
 
 val install : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
