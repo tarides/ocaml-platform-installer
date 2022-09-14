@@ -208,7 +208,16 @@ module Show = struct
     Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "depends:" % pkg_name)
 
   let version opam_opts pkg_name =
-    Cmd.run_l opam_opts Bos.Cmd.(v "show" % "-f" % "version" % pkg_name)
+    Cmd.run_s opam_opts Bos.Cmd.(v "show" % "-f" % "version" % pkg_name)
+
+  let pin opam_opts pkg_name =
+    Cmd.run_s opam_opts Bos.Cmd.(v "show" % "-f" % "pin" % pkg_name)
+end
+
+module List_ = struct
+  let compilers opam_opts () =
+    Cmd.run_l opam_opts
+      Bos.Cmd.(v "list" % "--has-flag" % "compiler" % "--installed" % "--short")
 end
 
 let install opam_opts pkgs =
