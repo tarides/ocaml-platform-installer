@@ -82,11 +82,8 @@ module Show : sig
   val depends :
     GlobalOpts.t -> string -> (string list, [> `Msg of string ]) result
 
-  val version :
-    GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
-
-  val pin :
-    GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
+  val version : GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
+  val pin : GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
 end
 
 module List_ : sig

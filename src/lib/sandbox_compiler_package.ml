@@ -89,4 +89,4 @@ let init opam_opts ocaml_version =
   in
   let* repo = Repo.init ~name path in
   let* () = init_pkg_ocaml_system repo ~ocaml_version in
-  Ok (repo, "ocaml-system."^ocaml_version)
+  Ok (repo, "ocaml-system." ^ ocaml_version)
