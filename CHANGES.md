@@ -2,6 +2,8 @@
 
 ## unreleased
 
+- `ocaml-platform` will now work with `ocaml-variants`, pinned and other
+  compilers. It won't used the cache for pinned or custom compilers. (#106)
 - Display version to be installed and whether a package needs to be built in the
   logs (#103)
 - Log before initialising Opam (#93)
