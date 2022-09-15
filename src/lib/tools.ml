@@ -161,7 +161,7 @@ let install opam_opts tools =
                     ~ver:best_version ~pure_binary:tool.pure_binary
                 in
                 let to_build, action_s =
-                  if Binary_repo.has_binary_pkg repo bname && should_use_cache
+                  if should_use_cache && Binary_repo.has_binary_pkg repo bname
                   then (to_build, "installed from cache")
                   else ((tool, bname) :: to_build, "built from source")
                 in
