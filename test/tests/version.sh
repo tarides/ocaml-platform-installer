@@ -10,3 +10,6 @@ dune-release --version
 dune ocaml-merlin --version
 odoc --version
 ocamlformat --version
+ocaml-mdx --version
+opam-publish --version
+utop -version
