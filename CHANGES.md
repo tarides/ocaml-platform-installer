@@ -4,6 +4,9 @@
 
 - Force the installed version to match the best version available for a compiler
   version. (#112)
+- Separate between packages that depends or not on the ocaml version used to
+  compile them. When they do not depend on it, use a single entry per package
+  version in the cache (#110).
 
 ## 0.4.0 (2022-09-26)
 
