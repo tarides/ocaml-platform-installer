@@ -9,6 +9,7 @@ type tool = {
   name : string;
   pure_binary : bool;
   required_version : string option;  (** Version required by the project. *)
+  ocaml_version_dependent : bool;
 }
 
 let parse_constraints s =
@@ -144,7 +145,7 @@ let install opam_opts tools =
     in
     Result.List.fold_left
       (fun ((to_build, to_install, not_installed) as acc) tool ->
-        let { name; pure_binary; _ } = tool in
+        let { name; pure_binary; ocaml_version_dependent; _ } = tool in
         let pkg_version = List.assoc_opt name version_list in
         match pkg_version with
         | Some (Some _) ->
@@ -155,13 +156,17 @@ let install opam_opts tools =
             | Ok version ->
                 let bname =
                   Binary_package.binary_name ~ocaml_version ~name ~ver:version
-                    ~pure_binary
+                    ~pure_binary ~ocaml_version_dependent
                 in
                 let to_build, action_s =
                   if should_use_cache && Binary_repo.has_binary_pkg repo bname
                   then (to_build, "installed from cache")
                   else
                     let build sandbox =
+                      let ocaml_version =
+                        if tool.ocaml_version_dependent then Some ocaml_version
+                        else None
+                      in
                       make_binary_package opam_opts ~ocaml_version sandbox repo
                         bname ~version tool
                     in
@@ -238,14 +243,17 @@ let find_ocamlformat_version () =
 (** TODO: This should be moved to an other module to for example do automatic
     recognizing of ocamlformat's version. *)
 let platform () =
-  let tool ?(pure_binary = false) ?(required_version = None) name =
-    { name; pure_binary; required_version }
+  let tool ?(pure_binary = false) ?(required_version = None)
+      ?(ocaml_version_dependent = true) name =
+    { name; pure_binary; required_version; ocaml_version_dependent }
   in
   [
     tool ~pure_binary:true "dune";
-    tool "dune-release";
+    tool ~ocaml_version_dependent:false "dune-release";
     tool "merlin";
     tool "ocaml-lsp-server";
     tool "odoc";
-    tool ~required_version:(find_ocamlformat_version ()) "ocamlformat";
+    tool ~ocaml_version_dependent:false
+      ~required_version:(find_ocamlformat_version ())
+      "ocamlformat";
   ]
