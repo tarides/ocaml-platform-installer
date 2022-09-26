@@ -13,7 +13,8 @@ module Opam_file : sig
   type t
   type cmd = string list
 
-  type atom = [ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string * string
+  type atom =
+    string * ([ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string) option
   (** [operator * var_name * constraint] *)
 
   type formula = Atom of atom | Formula of [ `And | `Or ] * formula * formula

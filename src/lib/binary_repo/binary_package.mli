@@ -10,6 +10,7 @@ val binary_name :
   name:string ->
   ver:string ->
   pure_binary:bool ->
+  ocaml_version_dependent:bool ->
   full_name
 
 val to_string : full_name -> string
@@ -20,7 +21,7 @@ val package : full_name -> Package.full_name
 type binary_pkg = Package.Install_file.t * Package.Opam_file.t
 
 val make_binary_package :
-  ocaml_version:string ->
+  ocaml_version:string option ->
   arch:string ->
   os_distribution:string ->
   prefix:Fpath.t ->

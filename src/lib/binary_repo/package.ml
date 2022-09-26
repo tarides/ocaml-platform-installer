@@ -30,17 +30,24 @@ module Opam_file = struct
   let list l = with_pos @@ List (with_pos l)
   let option v l = with_pos @@ Option (v, with_pos l)
 
-  type atom = [ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string * string
+  type atom =
+    string * ([ `Eq | `Geq | `Gt | `Leq | `Lt | `Neq ] * string) option
+
   type formula = Atom of atom | Formula of [ `And | `Or ] * formula * formula
 
-  let available_atom (op, a, b) =
-    with_pos @@ Relop (with_pos op, ident a, string b)
+  let available_atom (a, cst) =
+    match cst with
+    | None -> string a
+    | Some (op, b) -> with_pos @@ Relop (with_pos op, ident a, string b)
 
-  let dependency_atom (op, a, b) =
-    with_pos
-    @@ Option
-         ( string a,
-           with_pos [ with_pos @@ Prefix_relop (with_pos op, string b) ] )
+  let dependency_atom (a, cst) =
+    match cst with
+    | None -> string a
+    | Some (op, b) ->
+        with_pos
+        @@ Option
+             ( string a,
+               with_pos [ with_pos @@ Prefix_relop (with_pos op, string b) ] )
 
   let rec formula atom f =
     match f with
