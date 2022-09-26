@@ -96,6 +96,16 @@ module Cmd = struct
 
   (** Like [run_s] but handle the "not found" status. *)
   let run_s_opt opam_opts cmd = run_gen opam_opts (out_s, out_opt) cmd
+
+  (** Like [run_s] but check that the output doesn't contain more than one line.
+      Returns an error otherwise. Returns [Ok None] if the output is empty. *)
+  let run_1l opam_opts cmd =
+    let* output = run_l opam_opts cmd in
+    match output with
+    | [] -> Ok None
+    | [ s ] -> Ok (Some s)
+    | _ :: _ :: _ ->
+        Result.errorf "Command '%a' returned unexpected output" Bos.Cmd.pp cmd
 end
 
 module Config = struct
@@ -216,7 +226,7 @@ end
 
 module List_ = struct
   let compiler opam_opts () =
-    Cmd.run_s opam_opts
+    Cmd.run_1l opam_opts
       Bos.Cmd.(
         v "list" % "--field-match=conflict-class:ocaml-core-compiler"
         % "--installed" % "--short")

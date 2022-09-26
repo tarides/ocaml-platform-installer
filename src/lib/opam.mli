@@ -87,7 +87,8 @@ module Show : sig
 end
 
 module List_ : sig
-  val compiler : GlobalOpts.t -> unit -> (string, [> `Msg of string ]) result
+  val compiler :
+    GlobalOpts.t -> unit -> (string option, [> `Msg of string ]) result
 end
 
 val install : GlobalOpts.t -> string list -> (unit, [> `Msg of string ]) result
