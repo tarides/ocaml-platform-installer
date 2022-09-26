@@ -215,9 +215,11 @@ module Show = struct
 end
 
 module List_ = struct
-  let compilers opam_opts () =
-    Cmd.run_l opam_opts
-      Bos.Cmd.(v "list" % "--has-flag" % "compiler" % "--installed" % "--short")
+  let compiler opam_opts () =
+    Cmd.run_s opam_opts
+      Bos.Cmd.(
+        v "list" % "--field-match=conflict-class:ocaml-core-compiler"
+        % "--installed" % "--short")
 end
 
 let install opam_opts pkgs =
