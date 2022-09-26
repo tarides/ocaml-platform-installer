@@ -1,5 +1,6 @@
 open! Import
 open Astring
+open Rresult
 open Bos
 module OV = Ocaml_version
 open Result.Syntax
@@ -105,36 +106,26 @@ let make_binary_package opam_opts ~ocaml_version sandbox repo bname tool =
     be used to select the highest available version of the tools and also to
     override the [ocaml-system] package declaration in the sandbox. *)
 let get_compiler_pkg opam_opts =
-  let* compiler_list = Opam.List_.compilers opam_opts () in
-  match compiler_list with
-  | name :: _ ->
-      let+ ver = Opam.Show.version opam_opts name in
-      Package.v ~name ~ver
-  | [] -> Error (`Msg "No compiler installed in your current switch.")
-
-(** We only use the cache when it is a regular unpinned compiler *)
-let should_use_cache opam_opts compiler_pkg =
-  match Package.name compiler_pkg with
-  | ("ocaml-system" | "ocaml-variants" | "ocaml-base-compiler") as name -> (
-      let+ pin = Opam.Show.pin opam_opts name in
-      match pin with
-      | "" -> true
-      | _ ->
-          Logs.app (fun m ->
-              m "* Pinned compiler detected. No cache will be used.");
-          false)
-  | _ ->
-      Logs.app (fun m ->
-          m "* Custom compiler package detected. No cache will be used.");
-      Ok false
+  let* name = Opam.List_.compiler opam_opts () in
+  match name with
+  | "ocaml-system" | "ocaml-variants" | "ocaml-base-compiler" ->
+      let* ver = Opam.Show.version opam_opts name in
+      let* pin = Opam.Show.pin opam_opts name in
+      Ok (Package.v ~name ~ver, pin <> "")
+  | _ -> R.error_msgf "Cannot install tools for compilers '%s'" name
 
 let install opam_opts tools =
   let binary_repo_path =
     Fpath.(
       opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
   in
-  let* compiler_pkg = get_compiler_pkg opam_opts in
-  let* should_use_cache = should_use_cache opam_opts compiler_pkg in
+  let* compiler_pkg, pinned = get_compiler_pkg opam_opts in
+  let should_use_cache =
+    (* We only use the cache when it is a regular unpinned compiler *)
+    if pinned then
+      Logs.app (fun m -> m "* Pinned compiler detected. No cache will be used.");
+    not pinned
+  in
   let ocaml_version = Package.ver compiler_pkg in
   let* repo = Binary_repo.init binary_repo_path in
   (* [tools_to_build] is the list of tools that need to be built and placed in
