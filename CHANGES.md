@@ -2,6 +2,8 @@
 
 ## unreleased
 
+## 0.4.0 (2022-09-26)
+
 - `ocaml-platform` will now work with all common compiler packages, skipping the
   cache for pinned one. it will fail with a friendly error message for very
   uncommon one. (#106)
