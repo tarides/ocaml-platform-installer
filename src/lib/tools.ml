@@ -113,7 +113,8 @@ let get_compiler_pkg opam_opts =
       let* ver = Opam.Show.version opam_opts name in
       let* pin = Opam.Show.pin opam_opts name in
       Ok (Package.v ~name ~ver, pin <> "")
-  | Some name -> R.error_msgf "Cannot install tools for compilers '%s'" name
+  | Some name ->
+      R.error_msgf "Installing tools for compiler '%s' is not supported." name
   | None -> R.error_msgf "No compiler installed in your current switch."
 
 let install opam_opts tools =
