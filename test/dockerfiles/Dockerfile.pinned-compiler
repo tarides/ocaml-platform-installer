@@ -2,6 +2,8 @@ ARG TARGETPLATFORM=$TARGETPLATFORM
 FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
 FROM ocaml/opam:ubuntu-ocaml-4.13
 
+RUN sudo apt update && sudo apt install -y libgmp-dev libssl-dev pkg-config
+
 COPY test/tests/pin-ocaml-compiler.sh .
 RUN bash pin-ocaml-compiler.sh
 
