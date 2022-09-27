@@ -11,10 +11,12 @@ This installer installs all the tools of the Platform in a switch and aims at of
 
 The official guide [Up and Running with OCaml](https://ocaml.org/docs/up-and-running) explains how to set up a complete work environment for your OCaml projects. It is a necessary reading for every OCaml newcomer.
 
-This set-up goes through several steps, some of which have to be redone for every new project. The `ocaml-platform` binary, automates and speeds those steps. However, you still need first to install the few dependencies of the OCaml environment, such as a C compiler (such as `gcc`) and other system tools: `bzip2`, `make`, `bubblewrap`, `patch`, `curl` and `unzip`. In most architecture, you can install them using your package manager, for example on Ubuntu or Debian:
+This set-up goes through several steps, some of which have to be redone for every new project. The `ocaml-platform` binary, automates and speeds those steps. However, you still need first to install the few dependencies of the OCaml environment, such as a C compiler (such as `gcc`) and other system tools: `bzip2`, `make`, `bubblewrap`, `patch`, `curl` and `unzip`.
+Some of the tools also require `libgmp-dev`, `libssl-dev` and `pkg-config`.
+In most architecture, you can install them using your package manager, for example on Ubuntu or Debian:
 
 ``` sh
-sudo apt install bzip2 make gcc bubblewrap rsync patch curl unzip
+sudo apt install bzip2 make gcc bubblewrap rsync patch curl unzip libgmp-dev libssl-dev pkg-config
 ```
 
 You can now run the installer script (which will call `sudo` for the final installation step):
