@@ -2,6 +2,9 @@
 
 ## unreleased
 
+- Force the installed version to match the best version available for a compiler
+  version. (#112)
+
 ## 0.4.0 (2022-09-26)
 
 - `ocaml-platform` will now work with all common compiler packages, skipping the
