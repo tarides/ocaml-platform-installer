@@ -3,10 +3,7 @@ open Import
 type t
 
 val install :
-  Opam.GlobalOpts.t ->
-  t ->
-  pkg:string * string option ->
-  (unit, 'e) Result.or_msg
+  Opam.GlobalOpts.t -> t -> pkg:string * string -> (unit, 'e) Result.or_msg
 
 val list_files :
   Opam.GlobalOpts.t -> t -> pkg:string -> (Fpath.t list, 'e) Result.or_msg

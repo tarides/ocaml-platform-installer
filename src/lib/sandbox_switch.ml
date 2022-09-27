@@ -113,8 +113,7 @@ let deinit opam_opts t =
   ignore (OS.Dir.delete ~recurse:true t.compiler_path);
   ()
 
-let pkg_to_string (pkg_name, pkg_ver) =
-  match pkg_ver with None -> pkg_name | Some ver -> pkg_name ^ "." ^ ver
+let pkg_to_string (pkg_name, pkg_ver) = pkg_name ^ "." ^ pkg_ver
 
 let install _opam_opts t ~pkg =
   let pkg = pkg_to_string pkg in
