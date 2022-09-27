@@ -1,0 +1,11 @@
+ARG TARGETPLATFORM=$TARGETPLATFORM
+
+FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
+
+FROM ocaml-platform-install-$TARGETPLATFORM:latest
+
+COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform
+
+COPY test/tests/version_dependent.sh .
+
+RUN bash version_dependent.sh

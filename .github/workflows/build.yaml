@@ -79,6 +79,10 @@ jobs:
         if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh reinstall_ocamlformat
 
+      - name: "Test: version dependency"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
+        run: ./test/run_test.sh version_dependent
+
       - name: Build release tarball
         if: startsWith(github.ref, 'refs/tags/')
         run: |
