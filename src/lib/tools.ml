@@ -157,7 +157,10 @@ let install opam_opts tools =
                 let to_build, action_s =
                   if should_use_cache && Binary_repo.has_binary_pkg repo bname
                   then (to_build, "installed from cache")
-                  else (({tool with version = Some best_version}, bname) :: to_build, "built from source")
+                  else
+                    ( ({ tool with version = Some best_version }, bname)
+                      :: to_build,
+                      "built from source" )
                 in
                 Logs.app (fun m ->
                     m "  -> %s.%s will be %s" tool.name best_version action_s);
