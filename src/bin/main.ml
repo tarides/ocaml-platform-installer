@@ -65,11 +65,15 @@ let main () =
         `Noblank;
         `P "- Code formatter: $(b,ocamlformat)";
         `Noblank;
-        `P "- Release helper: $(b,dune-release)";
+        `P "- Release helpers: $(b,dune-release), $(b,opam-publish)";
         `Noblank;
         `P "- LSP server: $(b,ocaml-lsp)";
         `Noblank;
         `P "- Editor helper: $(b,merlin)";
+        `Noblank;
+        `P "- Literate programming: $(b,mdx)";
+        `Noblank;
+        `P "- Improved REPL: $(b,utop)";
         `P
           "You can install the OCaml Platform tools in your current $(b,opam) \
            switch by running $(mname).";
