@@ -61,7 +61,7 @@ jobs:
 
       - name: "Test: install-in-small-project"
         if: ${{matrix.platform.target_arch == 'x86_64'}}
-        run: ./test/run_test.sh small-project install-in-small-project
+        run: ./test/run_test.sh install-in-small-project
 
       - name: "Test: odoc"
         if: ${{matrix.platform.target_arch == 'x86_64'}}
