@@ -13,8 +13,6 @@ set -euo pipefail
 # - installing the tools on top of dependencies
 #     tools should not replace a package if it is installed
 
-cd helloworld
-
 eval $(opam env)
 
 # Checking that we start with the good environment
