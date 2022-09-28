@@ -6,6 +6,8 @@ FROM ocaml-platform-small-project-$TARGETPLATFORM:latest
 
 COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform
 
+RUN opam switch create helloworld/ 4.13.1
+
 RUN true
     # https://stackoverflow.com/questions/51115856/docker-failed-to-export-image-failed-to-create-image-failed-to-get-layer
 
