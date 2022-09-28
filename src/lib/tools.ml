@@ -127,8 +127,7 @@ let get_cache_repo opam_opts ~pinned f =
   if pinned then (
     (* Pinned compiler: don't actually cache the result by using a temporary
        repository. *)
-    Logs.app (fun m ->
-        m "* Pinned compiler detected. Caching is disabled.");
+    Logs.app (fun m -> m "* Pinned compiler detected. Caching is disabled.");
     Result.join
     @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
          (fun tmp_path () ->
@@ -173,8 +172,8 @@ let install opam_opts tools =
                     ~pure_binary ~ocaml_version_dependent
                 in
                 let to_build, action_s =
-                  if Binary_repo.has_binary_pkg repo bname
-                  then (to_build, "installed from cache")
+                  if Binary_repo.has_binary_pkg repo bname then
+                    (to_build, "installed from cache")
                   else
                     let build sandbox =
                       let ocaml_version =
