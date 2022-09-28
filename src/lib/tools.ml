@@ -129,7 +129,8 @@ let install opam_opts tools =
   let should_use_cache =
     (* We only use the cache when it is a regular unpinned compiler *)
     if pinned then
-      Logs.app (fun m -> m "* Pinned compiler detected. No cache will be used.");
+      Logs.app (fun m ->
+          m "* Pinned compiler detected. Disable cache for some package.");
     not pinned
   in
   let ocaml_version = Package.ver compiler_pkg in
@@ -159,7 +160,9 @@ let install opam_opts tools =
                     ~pure_binary ~ocaml_version_dependent
                 in
                 let to_build, action_s =
-                  if should_use_cache && Binary_repo.has_binary_pkg repo bname
+                  if
+                    (should_use_cache || tool.ocaml_version_dependent)
+                    && Binary_repo.has_binary_pkg repo bname
                   then (to_build, "installed from cache")
                   else
                     let build sandbox =
