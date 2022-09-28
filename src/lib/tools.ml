@@ -120,21 +120,34 @@ let get_compiler_pkg opam_opts =
       R.error_msgf "Installing tools for compiler '%s' is not supported." name
   | None -> R.error_msgf "No compiler installed in your current switch."
 
+(** Manage initialisation of the cache repository. When building for a pinned
+    compiler (indicated by [~pinned:true]), an ephemeral repository is used
+    instead of the global cache. *)
+let get_cache_repo opam_opts ~pinned f =
+  if pinned then (
+    (* Pinned compiler: don't actually cache the result by using a temporary
+       repository. *)
+    Logs.app (fun m ->
+        m "* Pinned compiler detected. Caching is disabled.");
+    Result.join
+    @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
+         (fun tmp_path () ->
+           let* repo = Binary_repo.init tmp_path in
+           f repo)
+         ())
+  else
+    (* Otherwise, use the global cache. *)
+    let global_binary_repo_path =
+      Fpath.(
+        opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
+    in
+    let* repo = Binary_repo.init global_binary_repo_path in
+    f repo
+
 let install opam_opts tools =
-  let binary_repo_path =
-    Fpath.(
-      opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
-  in
   let* compiler_pkg, pinned = get_compiler_pkg opam_opts in
-  let should_use_cache =
-    (* We only use the cache when it is a regular unpinned compiler *)
-    if pinned then
-      Logs.app (fun m ->
-          m "* Pinned compiler detected. Disable cache for some package.");
-    not pinned
-  in
   let ocaml_version = Package.ver compiler_pkg in
-  let* repo = Binary_repo.init binary_repo_path in
+  get_cache_repo opam_opts ~pinned @@ fun repo ->
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
@@ -160,9 +173,7 @@ let install opam_opts tools =
                     ~pure_binary ~ocaml_version_dependent
                 in
                 let to_build, action_s =
-                  if
-                    (should_use_cache || tool.ocaml_version_dependent)
-                    && Binary_repo.has_binary_pkg repo bname
+                  if Binary_repo.has_binary_pkg repo bname
                   then (to_build, "installed from cache")
                   else
                     let build sandbox =
