@@ -124,6 +124,11 @@ let get_compiler_pkg opam_opts =
     compiler (indicated by [~pinned:true]), an ephemeral repository is used
     instead of the global cache. *)
 let get_cache_repo opam_opts ~pinned f =
+  let global_binary_repo_path =
+    Fpath.(
+      opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
+  in
+  let* global_repo = Binary_repo.init global_binary_repo_path in
   if pinned then (
     (* Pinned compiler: don't actually cache the result by using a temporary
        repository. *)
@@ -132,21 +137,15 @@ let get_cache_repo opam_opts ~pinned f =
     @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
          (fun tmp_path () ->
            let* repo = Binary_repo.init tmp_path in
-           f repo)
+           f repo global_repo)
          ())
-  else
-    (* Otherwise, use the global cache. *)
-    let global_binary_repo_path =
-      Fpath.(
-        opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
-    in
-    let* repo = Binary_repo.init global_binary_repo_path in
-    f repo
+  else (* Otherwise, use the global cache. *)
+    f global_repo global_repo
 
 let install opam_opts tools =
   let* compiler_pkg, pinned = get_compiler_pkg opam_opts in
   let ocaml_version = Package.ver compiler_pkg in
-  get_cache_repo opam_opts ~pinned @@ fun repo ->
+  get_cache_repo opam_opts ~pinned @@ fun dependent_repo independent_repo ->
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
@@ -159,6 +158,9 @@ let install opam_opts tools =
     Result.List.fold_left
       (fun ((to_build, to_install, not_installed) as acc) tool ->
         let { name; pure_binary; ocaml_version_dependent; _ } = tool in
+        let repo =
+          if ocaml_version_dependent then dependent_repo else independent_repo
+        in
         let pkg_version = List.assoc_opt name version_list in
         match pkg_version with
         | Some (Some _) ->
@@ -220,13 +222,14 @@ let install opam_opts tools =
       Ok ()
   | _ ->
       let+ () =
-        let repo = Binary_repo.repo repo in
-        Installed_repo.with_repo_enabled opam_opts repo (fun () ->
-            let* () = Installed_repo.update opam_opts repo in
-            Logs.app (fun m -> m "* Installing tools...");
-            Opam.install
-              { opam_opts with log_height = Some 10 }
-              tools_to_install)
+        let dependent_repo = Binary_repo.repo dependent_repo
+        and independent_repo = Binary_repo.repo independent_repo in
+        Installed_repo.with_repo_enabled opam_opts independent_repo @@ fun () ->
+        Installed_repo.with_repo_enabled opam_opts dependent_repo @@ fun () ->
+        let* () = Installed_repo.update opam_opts independent_repo in
+        let* () = Installed_repo.update opam_opts dependent_repo in
+        Logs.app (fun m -> m "* Installing tools...");
+        Opam.install { opam_opts with log_height = Some 10 } tools_to_install
       in
       Logs.app (fun m ->
           m
