@@ -83,6 +83,10 @@ jobs:
         if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh version_dependent
 
+      - name: "Test: pinned-compiler"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
+        run: ./test/run_test.sh pinned-compiler
+
       - name: Build release tarball
         if: startsWith(github.ref, 'refs/tags/')
         run: |

@@ -7,5 +7,3 @@ FROM ocaml/opam:ubuntu-ocaml-4.13
 COPY test/tests/small-project.sh .
 
 RUN bash small-project.sh
-
-COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform

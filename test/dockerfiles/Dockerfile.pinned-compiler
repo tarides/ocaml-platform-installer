@@ -1,0 +1,20 @@
+ARG TARGETPLATFORM=$TARGETPLATFORM
+FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
+FROM ocaml/opam:ubuntu-ocaml-4.13
+
+COPY test/tests/pin-ocaml-compiler.sh .
+RUN bash pin-ocaml-compiler.sh
+
+COPY test/tests/small-project.sh .
+RUN bash small-project.sh
+WORKDIR helloworld
+
+COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform
+
+COPY test/tests/install.sh .
+RUN bash install.sh
+# Check that the tools are installed but don't appear in the cache
+COPY test/tests/version.sh .
+RUN bash version.sh
+COPY test/tests/check_cache_is_empty.sh .
+RUN bash check_cache_is_empty.sh
