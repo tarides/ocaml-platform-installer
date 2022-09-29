@@ -90,7 +90,7 @@ As setting up a switch and building all platform tools there is costly in time, 
 
 The packages in this repository consists of pre-compiled packages with no libraries, so they don't have to be built and their installation consists only of copying files.
 
-When the original package contains libraries, it differs from the binary package. In this case, the name of the binary package is suffixed with `+bin+platform`, and installing the original package (eg to have the library) will replace the platform one. In any case, the version of a package in the local repository contains both the original version and the ocaml version they were compiled with, as this may be important for some tools.
+When the original package contains libraries, it differs from the binary package. In this case, the name of the binary package is suffixed with `+bin+platform`, and installing the original package (eg to have the library) will replace the platform one. The version of a package in the local repository contains the version of the original package, but for some packages where it is relevant, it also contains the ocaml version they were compiled with.
 
 Note that the repository is enabled by `ocaml-platform` only when it is needed, and disabled afterward, so using `ocaml-platform` should not alter the behaviour of `opam`.
 
