@@ -3,9 +3,9 @@ open Rresult
 
 type t = { repo : Repo.t; archive : Fpath.t }
 
-let init base_path =
+let init ~name base_path =
   let repo_path = Fpath.(base_path / "repo") in
-  Repo.init ~name:"platform-cache" repo_path >>= fun repo ->
+  Repo.init ~name repo_path >>= fun repo ->
   let archive = Fpath.( / ) base_path "archives" in
   OS.Dir.create archive >>= fun _ -> Ok { repo; archive }
 
