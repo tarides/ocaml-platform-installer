@@ -128,7 +128,9 @@ let get_cache_repo opam_opts ~pinned f =
     Fpath.(
       opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
   in
-  let* global_repo = Binary_repo.init global_binary_repo_path in
+  let* global_repo =
+    Binary_repo.init ~name:"platform-cache" global_binary_repo_path
+  in
   if pinned then (
     (* Pinned compiler: don't actually cache the result by using a temporary
        repository. *)
@@ -136,7 +138,10 @@ let get_cache_repo opam_opts ~pinned f =
     Result.join
     @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
          (fun tmp_path () ->
-           let* repo = Binary_repo.init tmp_path in
+           let name =
+             "ocaml-platform-pinned-cache-" ^ Fpath.to_string tmp_path
+           in
+           let* repo = Binary_repo.init ~name tmp_path in
            f ~global_repo ~push_repo:repo [ global_repo; repo ])
          ())
   else

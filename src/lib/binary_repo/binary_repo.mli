@@ -5,7 +5,7 @@ open Bos
 
 type t
 
-val init : Fpath.t -> (t, 'e) OS.result
+val init : name:string -> Fpath.t -> (t, 'e) OS.result
 val repo : t -> Repo.t
 
 val archive_path : t -> Binary_package.full_name -> Fpath.t
