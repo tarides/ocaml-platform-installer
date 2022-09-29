@@ -4,7 +4,11 @@ set -xeuo pipefail
 # static_targetos is used for static builds of ocaml-platform, targetos is used
 # for Opam's builds.
 
-OPAM_VERSION=2.1.3
+latest_opam_version () {
+    echo $(curl -s https://api.github.com/repos/ocaml/opam/releases/latest | jq -r .tag_name)
+}
+
+OPAM_VERSION=$(latest_opam_version)
 
 get_opam_base_url ()
 {
