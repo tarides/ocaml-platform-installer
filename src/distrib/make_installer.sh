@@ -4,6 +4,8 @@ set -xeuo pipefail
 # static_targetos is used for static builds of ocaml-platform, targetos is used
 # for Opam's builds.
 
+OPAM_VERSION=2.1.3
+
 cat <<EOF
 #/usr/bin/env bash
 set -euo pipefail
@@ -72,17 +74,17 @@ check_sha512()
 install_opam ()
 {
   local opam_bin opam_base_url sha512
-  opam_bin=opam-2.1.3-\$targetarch-\$targetos
-  opam_base_url=https://github.com/ocaml/opam/releases/download/2.1.3
+  opam_bin=opam-$OPAM_VERSION-\$targetarch-\$targetos
+  opam_base_url=https://github.com/ocaml/opam/releases/download/$OPAM_VERSION
   case \$opam_bin in
-    opam-2.1.3-arm64-linux)     sha512=6c495ed1ebb63eeb3b4a07068df97673dd9520c4474e480102412c23eb35e796a237680df3e0905faade190ead69c67be8f3a92e78944c2896e3546dfa68361d ;;
-    opam-2.1.3-arm64-macos)     sha512=abd834a078c6c783fa021f63ff17e5d4e3c8af833bcc276995f73c2d9af446b68ed8132bc344c791ce78afae980b6a6ca6ad0cea599076216deb5fe34e032250 ;;
-    opam-2.1.3-armhf-linux)     sha512=303e7e71daa3e678f6aed025a1ff5b4fbc1d3146dcda0d0ae91884d3ccce4b205d1a4d283005b63a3990ea4452df291f2e84d144ca13bc40373bcb46ee702690 ;;
-    opam-2.1.3-i686-linux)      sha512=b6834a54294c864069e70d0a46346fd4166c6847985f751c02a8c00184fc346095cbced3ded0aa34d710e1a68d687f5ca3ad8df4a2eea3c681727f5d1c0b099c ;;
-    opam-2.1.3-x86_64-freebsd)  sha512=0cf37cb5f7ca95706bacaf8340abd00901b3a7c7bfba4af1ba77f5740614e1e5227f9632be0427f1efdf8ed324c21efe412bf7f3a725afa84ac7f7339c4b5cbd ;;
-    opam-2.1.3-x86_64-linux)    sha512=b02e49f062291d6adf97a4e0ab3774f5ecb886d5ff73e693773493249f26aaa11b1cb1987ecf5074ce431fc34bacdc359a560d75ecc9bb4853f564489194b43b ;;
-    opam-2.1.3-x86_64-macos)    sha512=0d820ba42f34e6e3cfc6ac145794fb02b919f7c7086d9c6fb92489ddf11ab42d718753c9f84275f553832536216b66ee1bb57e93d08fc658cf0a82678df5be42 ;;
-    opam-2.1.3-x86_64-openbsd)  sha512=dc4479ca27baaa1b596451768cfeaeca35a87321a9938d3ecb3e3247adbc814da400667a864ba4d8cbffa665b72dc9e55aa7d3410a5caa8b82b4dc04991e5f77 ;;
+    opam-$OPAM_VERSION-arm64-linux)     sha512=6c495ed1ebb63eeb3b4a07068df97673dd9520c4474e480102412c23eb35e796a237680df3e0905faade190ead69c67be8f3a92e78944c2896e3546dfa68361d ;;
+    opam-$OPAM_VERSION-arm64-macos)     sha512=abd834a078c6c783fa021f63ff17e5d4e3c8af833bcc276995f73c2d9af446b68ed8132bc344c791ce78afae980b6a6ca6ad0cea599076216deb5fe34e032250 ;;
+    opam-$OPAM_VERSION-armhf-linux)     sha512=303e7e71daa3e678f6aed025a1ff5b4fbc1d3146dcda0d0ae91884d3ccce4b205d1a4d283005b63a3990ea4452df291f2e84d144ca13bc40373bcb46ee702690 ;;
+    opam-$OPAM_VERSION-i686-linux)      sha512=b6834a54294c864069e70d0a46346fd4166c6847985f751c02a8c00184fc346095cbced3ded0aa34d710e1a68d687f5ca3ad8df4a2eea3c681727f5d1c0b099c ;;
+    opam-$OPAM_VERSION-x86_64-freebsd)  sha512=0cf37cb5f7ca95706bacaf8340abd00901b3a7c7bfba4af1ba77f5740614e1e5227f9632be0427f1efdf8ed324c21efe412bf7f3a725afa84ac7f7339c4b5cbd ;;
+    opam-$OPAM_VERSION-x86_64-linux)    sha512=b02e49f062291d6adf97a4e0ab3774f5ecb886d5ff73e693773493249f26aaa11b1cb1987ecf5074ce431fc34bacdc359a560d75ecc9bb4853f564489194b43b ;;
+    opam-$OPAM_VERSION-x86_64-macos)    sha512=0d820ba42f34e6e3cfc6ac145794fb02b919f7c7086d9c6fb92489ddf11ab42d718753c9f84275f553832536216b66ee1bb57e93d08fc658cf0a82678df5be42 ;;
+    opam-$OPAM_VERSION-x86_64-openbsd)  sha512=dc4479ca27baaa1b596451768cfeaeca35a87321a9938d3ecb3e3247adbc814da400667a864ba4d8cbffa665b72dc9e55aa7d3410a5caa8b82b4dc04991e5f77 ;;
     *)
       echo "Cannot install opam for \$targetos \$targetarch." >&2
       echo "Opam is required to setup the platform. Please install it via your package manager or obtain it at https://opam.ocaml.org/" >&2
