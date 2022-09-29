@@ -146,7 +146,7 @@ let get_cache_repo opam_opts ~pinned f =
 let install opam_opts tools =
   let* compiler_pkg, pinned = get_compiler_pkg opam_opts in
   let ocaml_version = Package.ver compiler_pkg in
-  get_cache_repo opam_opts ~pinned @@ fun pull_repo push_repo repos ->
+  get_cache_repo opam_opts ~pinned @@ fun repo independent_repo repos ->
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
@@ -159,6 +159,9 @@ let install opam_opts tools =
     Result.List.fold_left
       (fun ((to_build, to_install, not_installed) as acc) tool ->
         let { name; pure_binary; ocaml_version_dependent; _ } = tool in
+        let pull_repo =
+          if tool.ocaml_version_dependent then repo else independent_repo
+        in
         let pkg_version = List.assoc_opt name version_list in
         match pkg_version with
         | Some (Some _) ->
@@ -180,8 +183,8 @@ let install opam_opts tools =
                         if tool.ocaml_version_dependent then Some ocaml_version
                         else None
                       in
-                      make_binary_package opam_opts ~ocaml_version sandbox
-                        push_repo bname ~version tool
+                      make_binary_package opam_opts ~ocaml_version sandbox repo
+                        bname ~version tool
                     in
                     ((name, build) :: to_build, "built from source")
                 in
