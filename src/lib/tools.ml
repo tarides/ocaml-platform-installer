@@ -137,7 +137,7 @@ let get_cache_repo opam_opts ~pinned f =
     @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
          (fun tmp_path () ->
            let* repo = Binary_repo.init tmp_path in
-           f repo global_repo)
+           f global_repo repo )
          ())
   else (* Otherwise, use the global cache. *)
     f global_repo global_repo
