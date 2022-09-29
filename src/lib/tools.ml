@@ -137,15 +137,16 @@ let get_cache_repo opam_opts ~pinned f =
     @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
          (fun tmp_path () ->
            let* repo = Binary_repo.init tmp_path in
-           f global_repo repo )
+           f global_repo repo [ global_repo; repo ])
          ())
-  else (* Otherwise, use the global cache. *)
-    f global_repo global_repo
+  else
+    (* Otherwise, use the global cache. *)
+    f global_repo global_repo [ global_repo ]
 
 let install opam_opts tools =
   let* compiler_pkg, pinned = get_compiler_pkg opam_opts in
   let ocaml_version = Package.ver compiler_pkg in
-  get_cache_repo opam_opts ~pinned @@ fun pull_repo push_repo ->
+  get_cache_repo opam_opts ~pinned @@ fun pull_repo push_repo repos ->
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
@@ -179,8 +180,8 @@ let install opam_opts tools =
                         if tool.ocaml_version_dependent then Some ocaml_version
                         else None
                       in
-                      make_binary_package opam_opts ~ocaml_version sandbox push_repo
-                        bname ~version tool
+                      make_binary_package opam_opts ~ocaml_version sandbox
+                        push_repo bname ~version tool
                     in
                     ((name, build) :: to_build, "built from source")
                 in
@@ -219,12 +220,16 @@ let install opam_opts tools =
       Ok ()
   | _ ->
       let+ () =
-        let pull_repo = Binary_repo.repo pull_repo
-        and push_repo = Binary_repo.repo push_repo in
-        Installed_repo.with_repo_enabled opam_opts pull_repo @@ fun () ->
-        Installed_repo.with_repo_enabled opam_opts push_repo @@ fun () ->
-        let* () = Installed_repo.update opam_opts pull_repo in
-        let* () = Installed_repo.update opam_opts push_repo in
+        let with_repos_enabled repos f =
+          List.fold_left
+            (fun k repo () ->
+              let repo = Binary_repo.repo repo in
+              Installed_repo.with_repo_enabled opam_opts repo @@ fun () ->
+              let* () = Installed_repo.update opam_opts repo in
+              k ())
+            f repos ()
+        in
+        with_repos_enabled repos @@ fun () ->
         Logs.app (fun m -> m "* Installing tools...");
         Opam.install { opam_opts with log_height = Some 10 } tools_to_install
       in
