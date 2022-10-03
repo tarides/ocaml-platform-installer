@@ -2,6 +2,8 @@
 
 ## unreleased
 
+## 0.5.0 (2022-09-29)
+
 - Avoid adding packages built with a pinned compiler into the cache. (#115)
 - Force the installed version to match the best version available for a compiler
   version. (#112)
