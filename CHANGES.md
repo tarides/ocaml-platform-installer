@@ -1,5 +1,8 @@
 # Changelog
 
+- Pull packages that are independent of the ocaml version from the global cache
+  (#117)
+
 ## unreleased
 
 - Avoid adding packages built with a pinned compiler into the cache. (#115)
