@@ -1,5 +1,8 @@
 # Changelog
 
+- Pull packages that are independent of the ocaml version from the global cache
+  (#117)
+
 ## unreleased
 
 ## 0.5.0 (2022-09-29)
