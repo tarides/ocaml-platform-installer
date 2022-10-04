@@ -72,8 +72,6 @@ let main () =
         `P "- Editor helper: $(b,merlin)";
         `Noblank;
         `P "- Literate programming: $(b,mdx)";
-        `Noblank;
-        `P "- Improved REPL: $(b,utop)";
         `P
           "You can install the OCaml Platform tools in your current $(b,opam) \
            switch by running $(mname).";

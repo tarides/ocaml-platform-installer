@@ -286,5 +286,4 @@ let platform () =
       "ocamlformat";
     tool "mdx";
     tool ~ocaml_version_dependent:false "opam-publish";
-    tool "utop";
   ]
