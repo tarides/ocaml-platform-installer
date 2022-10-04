@@ -4,7 +4,7 @@ FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
 
 FROM ubuntu:20.04
 
-RUN apt update && apt install -y \
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
     gcc make patch unzip bubblewrap curl rsync opam libgmp-dev libssl-dev pkg-config
 
 RUN useradd -ms /bin/bash user
