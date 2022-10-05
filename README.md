@@ -1,6 +1,6 @@
 # OCaml Platform Installer
 
-> :bangbang: Disclaimer: This repository is very much a work in progress. Use at your own risk. :wrench:
+> :bangbang: Disclaimer: This repository is still in alpha. If you encounter any bugs, please report them. :wrench:
 
 The OCaml Platform represents the best way for developers, both new and old, to write software in OCaml. It combines the core OCaml compiler with a coherent set of tools, documentation, libraries and testing resources.
 
@@ -25,7 +25,7 @@ bash < <(curl -sL https://github.com/tarides/ocaml-platform-installer/releases/l
 
 Don't hesitate to have a look at what the script does.
 In a nutshell, the script will install a static binary into `/usr/local/bin/ocaml-platform` as well as the `opam` binary if it isn't already installed.
-Currently, only Linux (both amd64 and arm64) and macOS (only amd64) are supported. macOS arm64 requires Rosetta to be installed. We plan on adding more targets soon.
+Currently, only Linux and macOS (both amd64 and arm64) are supported. We plan on adding more targets soon.
 
 Then, to install the Platform tools inside your opam switch (if you don't know what is a switch, read the [Up and running with OCaml guide](https://ocaml.org/docs/up-and-running)):
 
