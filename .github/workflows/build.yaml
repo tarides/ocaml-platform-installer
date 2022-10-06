@@ -55,6 +55,10 @@ jobs:
         if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh ocaml5
 
+      - name: "Test: install with latest opam"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
+        run: ./test/run_test.sh install-with-latest-opam
+
       - name: "Test: version"
         if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh version

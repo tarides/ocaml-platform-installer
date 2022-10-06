@@ -1,0 +1,21 @@
+ARG TARGETPLATFORM=$TARGETPLATFORM
+
+FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
+
+FROM ubuntu:20.04
+
+RUN apt update
+RUN apt install -y gcc make patch unzip bubblewrap curl rsync
+
+RUN bash -c "sh <(curl -fsSL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) <<< /usr/local/bin"
+
+RUN useradd -ms /bin/bash user
+WORKDIR /home/user
+USER user
+
+RUN opam init --disable-sandboxing --yes
+
+COPY test/tests/install.sh .
+COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform
+
+RUN bash install.sh
