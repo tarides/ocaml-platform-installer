@@ -284,6 +284,5 @@ let platform () =
     tool ~ocaml_version_dependent:false
       ~required_version:(find_ocamlformat_version ())
       "ocamlformat";
-    tool "mdx";
     tool ~ocaml_version_dependent:false "opam-publish";
   ]

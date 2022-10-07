@@ -70,8 +70,6 @@ let main () =
         `P "- LSP server: $(b,ocaml-lsp)";
         `Noblank;
         `P "- Editor helper: $(b,merlin)";
-        `Noblank;
-        `P "- Literate programming: $(b,mdx)";
         `P
           "You can install the OCaml Platform tools in your current $(b,opam) \
            switch by running $(mname).";
