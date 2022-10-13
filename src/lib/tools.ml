@@ -148,6 +148,41 @@ let get_cache_repo opam_opts ~pinned f =
     (* Otherwise, use the global cache. *)
     f ~global_repo ~push_repo:global_repo [ global_repo ]
 
+let should_install_pkg opam_opts ~version_list ~ocaml_version ~global_repo
+    ~push_repo tool =
+  let { name; pure_binary; ocaml_version_dependent; required_version } = tool in
+  (* Allow to pull some packages from the global cache in every cases. *)
+  let pull_repo = if ocaml_version_dependent then push_repo else global_repo in
+  let already_installed =
+    match (List.assoc_opt name version_list, required_version) with
+    | Some installed, Some required -> installed = required
+    | Some _, None -> true
+    | None, _ -> false
+  in
+  if already_installed then `Skip
+  else
+    match best_version_of_tool opam_opts ocaml_version tool with
+    | Ok version ->
+        let bname =
+          Binary_package.binary_name ~ocaml_version ~name ~ver:version
+            ~pure_binary ~ocaml_version_dependent
+        in
+        let build =
+          if Binary_repo.has_binary_pkg pull_repo bname then None
+          else
+            let build sandbox =
+              let ocaml_version =
+                if ocaml_version_dependent then Some ocaml_version else None
+              in
+              make_binary_package opam_opts ~ocaml_version sandbox push_repo
+                bname ~version tool
+            in
+            Some build
+        in
+        `Install (version, build, Binary_package.to_string bname)
+    | Error `Not_found -> `Not_available
+    | Error (`Msg _ as err) -> `Error err
+
 let install opam_opts tools =
   let* compiler_pkg, pinned = get_compiler_pkg opam_opts in
   let ocaml_version = Package.ver compiler_pkg in
@@ -164,54 +199,28 @@ let install opam_opts tools =
     in
     Result.List.fold_left
       (fun ((to_build, to_install, not_installed) as acc) tool ->
-        let { name; pure_binary; ocaml_version_dependent; required_version } =
-          tool
-        in
-        (* Allow to pull some packages from the global cache in every cases. *)
-        let pull_repo =
-          if tool.ocaml_version_dependent then push_repo else global_repo
-        in
-        let already_installed =
-          match (List.assoc_opt name version_list, required_version) with
-          | Some installed, Some required -> installed = required
-          | Some _, None -> true
-          | None, _ -> false
-        in
-        if already_installed then (
-          Logs.app (fun m -> m "  -> %s is already installed" name);
-          Ok acc)
-        else
-          match best_version_of_tool opam_opts ocaml_version tool with
-          | Ok version ->
-              let bname =
-                Binary_package.binary_name ~ocaml_version ~name ~ver:version
-                  ~pure_binary ~ocaml_version_dependent
-              in
-              let to_build, action_s =
-                if Binary_repo.has_binary_pkg pull_repo bname then
-                  (to_build, "installed from cache")
-                else
-                  let build sandbox =
-                    let ocaml_version =
-                      if tool.ocaml_version_dependent then Some ocaml_version
-                      else None
-                    in
-                    make_binary_package opam_opts ~ocaml_version sandbox
-                      push_repo bname ~version tool
-                  in
-                  ((name, build) :: to_build, "built from source")
-              in
-              Logs.app (fun m ->
-                  m "  -> %s.%s will be %s" name version action_s);
-              Ok
-                ( to_build,
-                  Binary_package.to_string bname :: to_install,
-                  not_installed )
-          | Error `Not_found ->
-              Logs.warn (fun m ->
-                  m "%s cannot be installed with OCaml %s" name ocaml_version);
-              Ok (to_build, to_install, name :: not_installed)
-          | Error (`Msg _) as err -> err)
+        match
+          should_install_pkg opam_opts ~version_list ~ocaml_version ~global_repo
+            ~push_repo tool
+        with
+        | `Skip ->
+            Logs.app (fun m -> m "  -> %s is already installed" tool.name);
+            Ok acc
+        | `Install (version, build, install) ->
+            let to_build, action_s =
+              match build with
+              | Some build ->
+                  ((tool.name, build) :: to_build, "built from source")
+              | None -> (to_build, "installed from cache")
+            and to_install = install :: to_install in
+            Logs.app (fun m ->
+                m "  -> %s.%s will be %s" tool.name version action_s);
+            Ok (to_build, to_install, not_installed)
+        | `Not_available ->
+            Logs.warn (fun m ->
+                m "%s cannot be installed with OCaml %s" tool.name ocaml_version);
+            Ok (to_build, to_install, tool.name :: not_installed)
+        | `Error err -> Error err)
       ([], [], []) tools
   in
   (match tools_to_build with
