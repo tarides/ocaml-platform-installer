@@ -164,48 +164,54 @@ let install opam_opts tools =
     in
     Result.List.fold_left
       (fun ((to_build, to_install, not_installed) as acc) tool ->
-        let { name; pure_binary; ocaml_version_dependent; _ } = tool in
+        let { name; pure_binary; ocaml_version_dependent; required_version } =
+          tool
+        in
         (* Allow to pull some packages from the global cache in every cases. *)
         let pull_repo =
           if tool.ocaml_version_dependent then push_repo else global_repo
         in
-        let pkg_version = List.assoc_opt name version_list in
-        match pkg_version with
-        | Some (Some _) ->
-            Logs.app (fun m -> m "  -> %s is already installed" name);
-            Ok acc
-        | _ -> (
-            match best_version_of_tool opam_opts ocaml_version tool with
-            | Ok version ->
-                let bname =
-                  Binary_package.binary_name ~ocaml_version ~name ~ver:version
-                    ~pure_binary ~ocaml_version_dependent
-                in
-                let to_build, action_s =
-                  if Binary_repo.has_binary_pkg pull_repo bname then
-                    (to_build, "installed from cache")
-                  else
-                    let build sandbox =
-                      let ocaml_version =
-                        if tool.ocaml_version_dependent then Some ocaml_version
-                        else None
-                      in
-                      make_binary_package opam_opts ~ocaml_version sandbox
-                        push_repo bname ~version tool
+        let already_installed =
+          match (List.assoc_opt name version_list, required_version) with
+          | Some installed, Some required -> installed = required
+          | Some _, None -> true
+          | None, _ -> false
+        in
+        if already_installed then (
+          Logs.app (fun m -> m "  -> %s is already installed" name);
+          Ok acc)
+        else
+          match best_version_of_tool opam_opts ocaml_version tool with
+          | Ok version ->
+              let bname =
+                Binary_package.binary_name ~ocaml_version ~name ~ver:version
+                  ~pure_binary ~ocaml_version_dependent
+              in
+              let to_build, action_s =
+                if Binary_repo.has_binary_pkg pull_repo bname then
+                  (to_build, "installed from cache")
+                else
+                  let build sandbox =
+                    let ocaml_version =
+                      if tool.ocaml_version_dependent then Some ocaml_version
+                      else None
                     in
-                    ((name, build) :: to_build, "built from source")
-                in
-                Logs.app (fun m ->
-                    m "  -> %s.%s will be %s" name version action_s);
-                Ok
-                  ( to_build,
-                    Binary_package.to_string bname :: to_install,
-                    not_installed )
-            | Error `Not_found ->
-                Logs.warn (fun m ->
-                    m "%s cannot be installed with OCaml %s" name ocaml_version);
-                Ok (to_build, to_install, name :: not_installed)
-            | Error (`Msg _) as err -> err))
+                    make_binary_package opam_opts ~ocaml_version sandbox
+                      push_repo bname ~version tool
+                  in
+                  ((name, build) :: to_build, "built from source")
+              in
+              Logs.app (fun m ->
+                  m "  -> %s.%s will be %s" name version action_s);
+              Ok
+                ( to_build,
+                  Binary_package.to_string bname :: to_install,
+                  not_installed )
+          | Error `Not_found ->
+              Logs.warn (fun m ->
+                  m "%s cannot be installed with OCaml %s" name ocaml_version);
+              Ok (to_build, to_install, name :: not_installed)
+          | Error (`Msg _) as err -> err)
       ([], [], []) tools
   in
   (match tools_to_build with

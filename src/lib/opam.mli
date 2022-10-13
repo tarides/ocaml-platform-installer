@@ -73,9 +73,9 @@ module Show : sig
     GlobalOpts.t -> string -> (string option, [> `Msg of string ]) result
 
   val installed_versions :
-    GlobalOpts.t ->
-    string list ->
-    ((string * string option) list, 'a) Result.or_msg
+    GlobalOpts.t -> string list -> ((string * string) list, 'a) Result.or_msg
+  (** Query the installed version of a list of package. Packages that are not
+      installed don't appear in the result. *)
 
   val opam_file : GlobalOpts.t -> pkg:string -> (string, 'a) Result.or_msg
 

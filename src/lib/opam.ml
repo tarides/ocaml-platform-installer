@@ -209,7 +209,7 @@ module Show = struct
           % "--normalise")
     in
     let+ res = parse res in
-    List.map (function a, "--" -> (a, None) | a, s -> (a, Some s)) res
+    List.filter_map (function _, "--" -> None | a, s -> Some (a, s)) res
 
   let opam_file opam_opts ~pkg =
     Cmd.run_s opam_opts Bos.Cmd.(v "show" % pkg % "-f" % "opam-file")
