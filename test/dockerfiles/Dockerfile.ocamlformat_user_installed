@@ -1,14 +1,19 @@
 ARG TARGETPLATFORM=$TARGETPLATFORM
-
 FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
+FROM ocaml/opam:ubuntu-ocaml-4.13
 
-FROM ocaml-platform-install-in-small-project-$TARGETPLATFORM:latest
+# Install a different version than in the script
+RUN opam install -y ocamlformat.0.23.0
+
+COPY test/tests/small-project.sh .
+RUN bash small-project.sh
+WORKDIR helloworld
 
 COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform
 
 RUN true
     # https://stackoverflow.com/questions/51115856/docker-failed-to-export-image-failed-to-create-image-failed-to-get-layer
 
-COPY test/tests/ocamlformat.sh .
+COPY test/tests/ocamlformat_user_installed.sh .
 
-RUN bash ocamlformat.sh
+RUN bash ocamlformat_user_installed.sh
