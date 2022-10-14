@@ -1,5 +1,10 @@
 # Changelog
 
+## unreleased
+
+- Fix OCamlformat is not installed to the right version if it was already
+  installed. (#127)
+
 ## 0.6.0 (2022-10-05)
 
 - Pull packages that are independent of the ocaml version from the global cache
