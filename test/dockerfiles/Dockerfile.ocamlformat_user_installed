@@ -1,13 +1,10 @@
 ARG TARGETPLATFORM=$TARGETPLATFORM
 FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
-FROM ocaml/opam:ubuntu-ocaml-4.13
+# Avoid rebuilding all the tools
+FROM ocaml-platform-install-in-small-project-$TARGETPLATFORM:latest
 
-# Install a different version than in the script
+# Install a different version than specified in the script
 RUN opam install -y ocamlformat.0.23.0
-
-COPY test/tests/small-project.sh .
-RUN bash small-project.sh
-WORKDIR helloworld
 
 COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform
 
