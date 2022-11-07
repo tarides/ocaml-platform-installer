@@ -212,7 +212,7 @@ let install opam_opts tools =
               | Some build ->
                   ((tool.name, build) :: to_build, "built from source")
               | None -> (to_build, "installed from cache")
-            and to_install = install :: to_install in
+            and to_install = (tool.name, install) :: to_install in
             Logs.app (fun m ->
                 m "  -> %s.%s will be %s" tool.name version action_s);
             Ok (to_build, to_install, not_installed)
@@ -224,27 +224,42 @@ let install opam_opts tools =
       ([], [], []) tools
   in
   (match tools_to_build with
-  | [] -> Ok ()
+  | [] -> Ok []
   | _ :: _ ->
       Logs.app (fun m -> m "* Building the tools...");
       Logs.app (fun m -> m "  -> Creating a sandbox...");
       Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version
         (fun sandbox ->
           let n = List.length tools_to_build in
-          Result.List.fold_left
-            (fun () (i, (tool_name, build)) ->
-              Logs.app (fun m ->
-                  m "  -> [%d/%d] Building %s..." (i + 1) n tool_name);
-              build sandbox)
-            ()
-            (List.mapi (fun i s -> (i, s)) tools_to_build)))
-  >>= fun () ->
+          Ok
+            (List.fold_left
+               (fun tools_failed (i, (tool_name, build)) ->
+                 Logs.app (fun m ->
+                     m "  -> [%d/%d] Building %s..." (i + 1) n tool_name);
+                 match build sandbox with
+                 | Ok () -> tools_failed
+                 | Error e ->
+                     Logs.warn (fun m ->
+                         m
+                           "There was an error during build of %s. Run with \
+                            `-v` for more information."
+                           tool_name);
+                     (tool_name, e) :: tools_failed)
+               []
+               (List.mapi (fun i s -> (i, s)) tools_to_build))))
+  >>= fun tools_failed ->
   (match tools_to_install with
   | [] ->
       Logs.app (fun m -> m "  -> All tools are already installed");
-      Ok ()
+      Ok []
   | _ ->
-      let+ () =
+      let tools_to_install =
+        let tools_failed_names = List.map (fun x -> fst x) tools_failed in
+        List.filter
+          (fun elem -> not (List.mem (fst elem) tools_failed_names))
+          tools_to_install
+      in
+      let* () =
         let with_repos_enabled repos f =
           List.fold_left
             (fun k repo () ->
@@ -256,20 +271,31 @@ let install opam_opts tools =
         in
         with_repos_enabled install_repos @@ fun () ->
         Logs.app (fun m -> m "* Installing tools...");
-        Opam.install { opam_opts with log_height = Some 10 } tools_to_install
+        Opam.install
+          { opam_opts with log_height = Some 10 }
+          (List.map snd tools_to_install)
       in
       Logs.app (fun m ->
-          m
-            "  -> The tools have been installed. For more information on the \
-             platform tools, run `ocaml-platform --help`");
-      Logs.app (fun m -> m "* Success."))
-  >>= fun () ->
-  if tools_not_installed <> [] then
-    Logs.warn (fun m ->
-        m "The following tools haven't been installed: %a"
+          m "  -> The following %s now installed: %a."
+            (if tools_to_install = [] then "tool is" else "tools are")
+            Fmt.(list ~sep:(any ", ") string)
+            (List.map fst tools_to_install));
+      Ok tools_failed)
+  >>= fun tools_failed ->
+  if tools_not_installed <> [] || tools_failed <> [] then
+    Logs.app (fun m ->
+        let l = tools_not_installed @ List.map (fun x -> fst x) tools_failed in
+        m "  -> The following %s been installed: %a"
+          (if l = [] then "tool hasn't" else "tools haven't")
           Fmt.(list ~sep:(any ", ") string)
-          tools_not_installed);
-  Ok ()
+          l)
+  else Logs.app (fun m -> m "* Success.");
+  Logs.app (fun m ->
+      m
+        "* For more information on the platform tools, run `ocaml-platform \
+         --help`");
+  if tools_failed <> [] then Error (`Multi (List.map snd tools_failed))
+  else Ok ()
 
 let find_ocamlformat_version () =
   match OS.File.read_lines (Fpath.v ".ocamlformat") with
