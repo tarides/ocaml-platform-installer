@@ -2,6 +2,7 @@
 
 ## unreleased
 
+- Continue installing relevant tools even when some builds have failed (#133)
 - Fix OCamlformat is not installed to the right version if it was already
   installed. (#127)
 
