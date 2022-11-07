@@ -95,6 +95,10 @@ jobs:
         if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh pinned-compiler
 
+      - name: "Test: continue-when-build-fails"
+        if: ${{matrix.platform.target_arch == 'x86_64'}}
+        run: ./test/run_test.sh continue-when-build-fails
+
       - name: Build release tarball
         if: startsWith(github.ref, 'refs/tags/')
         run: |
