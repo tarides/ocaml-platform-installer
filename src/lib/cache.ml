@@ -1,5 +1,59 @@
 open! Import
+open Rresult
+open Bos
 open Result.Syntax
+
+module Migrate = struct
+  let current_version = 1
+
+  let migrate v =
+    if v = 0 then ();
+    Ok ()
+
+  let version_file plugin_path =
+    Fpath.( / ) plugin_path "ocaml-platform-version"
+
+  let read_version plugin_path =
+    let* pexists = OS.Dir.exists plugin_path in
+    if not pexists then Ok current_version (* No migration to do *)
+    else
+      let version_file = version_file plugin_path in
+      let* vexists = OS.File.exists version_file in
+      if not vexists then Ok 0 (* Old enough to not have a version file *)
+      else
+        let* vcontent = OS.File.read_lines version_file in
+        match vcontent with
+        | [] | _ :: _ :: _ -> Error `Invalid_version
+        | [ v ] -> (
+            match int_of_string_opt v with
+            | None -> Error `Invalid_version
+            | Some v when v < 0 -> Error `Invalid_version
+            | Some v when v > current_version -> Error `Future_version
+            | Some v -> Ok v)
+
+  let save_current_version plugin_path =
+    OS.File.write_lines (version_file plugin_path)
+      [ string_of_int current_version ]
+
+  let clear_plugin_data plugin_path = OS.Dir.delete ~recurse:true plugin_path
+
+  (** Store a version number inside the repo directory indicating to allow
+      migrating the layout and clear obsolete packages. Operate on the files
+      directory, should be done before doing anything with the repository. *)
+  let check plugin_path =
+    match read_version plugin_path with
+    | Ok version when version = current_version -> Ok ()
+    | Ok version ->
+        let* () = migrate version in
+        save_current_version plugin_path
+    | Error `Invalid_version -> clear_plugin_data plugin_path
+    | Error `Future_version ->
+        Result.errorf
+          "ocaml-platform was downgraded. Please either install a newer \
+           version or remove the directory %a"
+          Fpath.pp plugin_path
+    | Error #R.msg as e -> e
+end
 
 type t = {
   global_repo : Binary_repo.t;
@@ -8,10 +62,11 @@ type t = {
 }
 
 let load opam_opts ~pinned =
-  let global_binary_repo_path =
-    Fpath.(
-      opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
+  let plugin_path =
+    Fpath.(opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform")
   in
+  let global_binary_repo_path = Fpath.( / ) plugin_path "cache" in
+  let* () = Migrate.check plugin_path in
   let* global_repo =
     Binary_repo.init ~name:"platform-cache" global_binary_repo_path
   in
