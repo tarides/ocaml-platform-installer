@@ -61,9 +61,6 @@ module Communication = struct
               Fmt.(list ~sep:(any ", ") string)
               (List.map fst tools_to_install))
 
-  let warn_pinned_detected () =
-    Logs.app (fun m -> m "* Pinned compiler detected. Caching is disabled.")
-
   let enter_install_stage () = Logs.app (fun m -> m "* Installing tools...")
 
   let tell_version_result tool r ocaml_version =
@@ -189,39 +186,10 @@ let get_compiler_pkg opam_opts =
       R.error_msgf "Installing tools for compiler '%s' is not supported." name
   | None -> R.error_msgf "No compiler installed in your current switch."
 
-(** Manage initialisation of the cache repository. When building for a pinned
-    compiler (indicated by [~pinned:true]), an ephemeral repository is used
-    instead of the global cache. *)
-let get_cache_repo opam_opts ~pinned f =
-  let global_binary_repo_path =
-    Fpath.(
-      opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
-  in
-  let* global_repo =
-    Binary_repo.init ~name:"platform-cache" global_binary_repo_path
-  in
-  if pinned then (
-    (* Pinned compiler: don't actually cache the result by using a temporary
-       repository. *)
-    Communication.warn_pinned_detected ();
-    Result.join
-    @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
-         (fun tmp_path () ->
-           let name =
-             "ocaml-platform-pinned-cache-" ^ Fpath.to_string tmp_path
-           in
-           let* repo = Binary_repo.init ~name tmp_path in
-           f ~global_repo ~push_repo:repo [ global_repo; repo ])
-         ())
-  else
-    (* Otherwise, use the global cache. *)
-    f ~global_repo ~push_repo:global_repo [ global_repo ]
-
-let should_install_pkg opam_opts ~version_list ~ocaml_version ~global_repo
-    ~push_repo tool =
+let should_install_pkg opam_opts ~version_list ~ocaml_version ~cache tool =
   let { name; pure_binary; ocaml_version_dependent; required_version } = tool in
-  (* Allow to pull some packages from the global cache in every cases. *)
-  let pull_repo = if ocaml_version_dependent then push_repo else global_repo in
+  let push_repo = Cache.push_repo cache in
+  let pull_repo = Cache.pull_repo ~ocaml_version_dependent cache in
   let already_installed =
     match (List.assoc_opt name version_list, required_version) with
     | Some installed, Some required -> installed = required
@@ -255,8 +223,7 @@ let should_install_pkg opam_opts ~version_list ~ocaml_version ~global_repo
 let install opam_opts tools =
   let* compiler_pkg, pinned = get_compiler_pkg opam_opts in
   let ocaml_version = Package.ver compiler_pkg in
-  get_cache_repo opam_opts ~pinned
-  @@ fun ~global_repo ~push_repo install_repos ->
+  Cache.load opam_opts ~pinned @@ fun cache ->
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
@@ -269,8 +236,7 @@ let install opam_opts tools =
     Result.List.fold_left
       (fun ((to_build, in_cache, non_installable) as acc) tool ->
         let action =
-          should_install_pkg opam_opts ~version_list ~ocaml_version ~global_repo
-            ~push_repo tool
+          should_install_pkg opam_opts ~version_list ~ocaml_version ~cache tool
         in
         Communication.tell_version_result tool action ocaml_version;
         match action with
@@ -307,16 +273,7 @@ let install opam_opts tools =
   (Communication.enter_install_stage ();
    let tools_to_install = tools_in_cache @ tools_built in
    let* () =
-     let with_repos_enabled repos f =
-       List.fold_left
-         (fun k repo () ->
-           let repo = Binary_repo.repo repo in
-           Installed_repo.with_repo_enabled opam_opts repo @@ fun () ->
-           let* () = Installed_repo.update opam_opts repo in
-           k ())
-         f repos ()
-     in
-     with_repos_enabled install_repos @@ fun () ->
+     Cache.with_repos_enabled opam_opts cache @@ fun () ->
      Opam.install
        { opam_opts with log_height = Some 10 }
        (List.map snd tools_to_install)
