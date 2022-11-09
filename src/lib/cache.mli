@@ -11,17 +11,20 @@ val load :
   pinned:bool ->
   (t -> ('a, ([> R.msg ] as 'e)) result) ->
   ('a, 'e) result
-(** Manage initialisation of the cache repository. When building for a pinned
-    compiler (indicated by [~pinned:true]), an ephemeral repository is used
-    instead of the global cache for storing the new packages. *)
+(** Manage initialisation of the cache repository.
 
-val pull_repo : ocaml_version_dependent:bool -> t -> Binary_repo.t
-(** The repository from which to check whether a package is installed. For a
-    non-pinned compiler, this is always the global repository.
+    When building for a pinned compiler (indicated by [~pinned:true]), an
+    ephemeral repository is used instead of the global cache for storing the new
+    packages. *)
 
-    In the case of a pinned compiler, packages that depend on the version of
-    OCaml will get the [push_repo] here, which will certainly not contain the
-    package. Such package can't be cached. *)
+val has_binary_pkg :
+  t -> ocaml_version_dependent:bool -> Binary_package.full_name -> bool
+(** Whether the given package is already in cache and doesn't need to be
+    rebuilt.
+
+    In case of a pinned compiler (indicated by passing [~pinned:true] to
+    {!load}), packages that depend on the version of OCaml (indicated by
+    [~ocaml_version_dependent:true]) are never cached (always rebuilt). *)
 
 val push_repo : t -> Binary_repo.t
 (** The repository in which to add newly built packages. *)
