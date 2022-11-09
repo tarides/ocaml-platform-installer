@@ -4,6 +4,7 @@
 module Result : sig
   include module type of Stdlib.Result
 
+  type msg = [ `Msg of string ]
   type ('a, 'e) or_msg = ('a, ([> `Msg of string | `Multi of 'e list ] as 'e)) t
 
   module Syntax : sig
@@ -26,3 +27,11 @@ module Result : sig
   val errorf :
     ('a, Format.formatter, unit, (_, [> `Msg of string ]) t) format4 -> 'a
 end
+
+val with_tmp_dir :
+  (string -> string, Format.formatter, unit, string -> string) format4 ->
+  (Fpath.t -> ('a, ([> Result.msg ] as 'e)) result) ->
+  ('a, 'e) result
+(** Create and delete a temporary directory. The first argument is a string
+    literal for naming the new directory, which will be concatenated to a more
+    unique name internally. *)

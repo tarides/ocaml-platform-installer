@@ -1,6 +1,7 @@
 module Result = struct
   include Stdlib.Result
 
+  type msg = [ `Msg of string ]
   type ('a, 'e) or_msg = ('a, ([> `Msg of string | `Multi of 'e list ] as 'e)) t
 
   module Syntax = struct
@@ -44,3 +45,7 @@ module Result = struct
 
   let errorf fmt = Format.kasprintf (fun msg -> Error (`Msg msg)) fmt
 end
+
+let with_tmp_dir suffix f =
+  let f p () = f p in
+  Bos.OS.Dir.with_tmp ("ocaml-platform-" ^^ suffix ^^ "-%s") f () |> Result.join
