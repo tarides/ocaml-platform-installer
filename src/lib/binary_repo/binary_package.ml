@@ -42,9 +42,7 @@ end
 type full_name = Package.full_name
 
 (** Name and version of the binary package corresponding to a given package. *)
-let binary_name ~ocaml_version ~name ~ver ~pure_binary ~ocaml_version_dependent
-    =
-  let name = if pure_binary then name else name ^ "+bin+platform" in
+let binary_name ~ocaml_version ~name ~ver ~ocaml_version_dependent =
   let ver =
     if ocaml_version_dependent then ver ^ "-ocaml" ^ ocaml_version else ver
   in
@@ -55,9 +53,7 @@ let ver = Package.ver
 let package t = t
 let to_string = Package.to_string
 
-let generate_opam_file ~arch ~os_distribution original_name bname pure_binary
-    archive_path ocaml_version =
-  let conflicts = if pure_binary then None else Some [ original_name ] in
+let generate_opam_file ~arch ~os_distribution bname archive_path ocaml_version =
   let available =
     let open Package.Opam_file in
     Package.Opam_file.Formula
@@ -79,7 +75,7 @@ let generate_opam_file ~arch ~os_distribution original_name bname pure_binary
           cst "ocaml-base-compiler" );
     ]
   in
-  Package.Opam_file.v ~depends ~available ?conflicts ~url:archive_path
+  Package.Opam_file.v ~depends ~available ~url:archive_path
     ~pkg_name:(name bname) ()
 
 (** Ignore files that do not exist. *)
@@ -135,7 +131,7 @@ let create_archive paths archive_path =
 (** Binary is already in the sandbox. Add this binary as a package in the local
     repo *)
 let make_binary_package ~ocaml_version ~arch ~os_distribution ~prefix ~files
-    ~archive_path bname ~name:query_name ~pure_binary =
+    ~archive_path bname ~name:query_name =
   filter_exists files >>= fun files ->
   let paths = files |> remove_lib ~prefix |> add_unprefixed ~prefix in
   create_archive paths archive_path >>= fun () ->
@@ -144,8 +140,7 @@ let make_binary_package ~ocaml_version ~arch ~os_distribution ~prefix ~files
     Binary_install_file.from_file_list query_name (List.map snd paths)
   in
   let opam_file =
-    generate_opam_file ~arch ~os_distribution query_name bname pure_binary
-      archive_path ocaml_version
+    generate_opam_file ~arch ~os_distribution bname archive_path ocaml_version
   in
   if not archive_created then
     Error (`Msg "Couldn't generate the package archive for unknown reason.")

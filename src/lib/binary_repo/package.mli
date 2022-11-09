@@ -22,7 +22,6 @@ module Opam_file : sig
   val v :
     ?install:cmd list ->
     ?depends:formula list ->
-    ?conflicts:string list ->
     ?available:formula ->
     ?url:Fpath.t ->
     pkg_name:string ->

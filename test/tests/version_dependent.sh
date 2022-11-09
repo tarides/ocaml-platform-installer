@@ -7,14 +7,14 @@ set -euo pipefail
 # The installed version of these tools should be tied to 4.08.1, as they are
 # dependent on the version of OCaml they were compiled with.
 [[ $(opam show dune -f depends: ) =~ "4.08.1" ]]
-[[ $(opam show merlin+bin+platform -f depends: ) =~ "4.08.1" ]]
-[[ $(opam show ocaml-lsp-server+bin+platform -f depends: ) =~ "4.08.1" ]]
-[[ $(opam show odoc+bin+platform -f depends: ) =~ "4.08.1" ]]
+[[ $(opam show merlin -f depends: ) =~ "4.08.1" ]]
+[[ $(opam show ocaml-lsp-server -f depends: ) =~ "4.08.1" ]]
+[[ $(opam show odoc -f depends: ) =~ "4.08.1" ]]
 
 # The installed version of these tools should not be tied to 4.08.1, as they are
-# is independent from the version of OCaml they were compiled with.
-[[ $(opam show dune-release+bin+platform -f depends: ) != *"4.08.1"* ]]
-[[ $(opam show ocamlformat+bin+platform -f depends: ) != *"4.08.1"* ]]
+# independent from the version of OCaml they were compiled with.
+[[ $(opam show dune-release -f depends: ) != *"4.08.1"* ]]
+[[ $(opam show ocamlformat -f depends: ) != *"4.08.1"* ]]
 
 # Now, we check that the installation still works well on 4.13
 

@@ -55,8 +55,7 @@ module Opam_file = struct
     | Formula (relop, g, h) ->
         with_pos @@ Logop (with_pos relop, formula atom g, formula atom h)
 
-  let v ?install ?(depends : formula list option) ?conflicts ?available ?url
-      ~pkg_name () =
+  let v ?install ?(depends : formula list option) ?available ?url ~pkg_name () =
     let opam_version = "2.0" in
     let file_name = "opam" in
     let opam_version = variable "opam-version" (string opam_version) in
@@ -72,16 +71,13 @@ module Opam_file = struct
     and depends =
       f_op_to_list depends @@ fun depends ->
       variable "depends" (list (List.map (formula dependency_atom) depends))
-    and conflicts =
-      f_op_to_list conflicts @@ fun conflicts ->
-      variable "conflicts" (list (List.map string conflicts))
     and url =
       f_op_to_list url @@ fun url ->
       let items = [ variable "src" (string (Fpath.to_string url)) ] in
       section "url" None items
     in
     let file_contents =
-      [ opam_version; name ] @ install @ depends @ available @ conflicts @ url
+      [ opam_version; name ] @ install @ depends @ available @ url
     in
     OpamPrinter.FullPos.opamfile
       { OpamParserTypes.FullPos.file_contents; file_name }
