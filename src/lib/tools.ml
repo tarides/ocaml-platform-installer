@@ -7,7 +7,6 @@ open Result.Syntax
 
 type tool = {
   name : string;
-  pure_binary : bool;
   required_version : string option;  (** Version required by the project. *)
   ocaml_version_dependent : bool;
 }
@@ -155,7 +154,6 @@ let best_version_of_tool opam_opts ocaml_version tool =
 
 let make_binary_package opam_opts ~ocaml_version sandbox repo bname ~version
     tool =
-  let { name; pure_binary; _ } = tool in
   let* () =
     Sandbox_switch.install opam_opts sandbox ~pkg:(tool.name, version)
   in
@@ -163,10 +161,10 @@ let make_binary_package opam_opts ~ocaml_version sandbox repo bname ~version
   let* os_distribution = Opam.Config.Var.get opam_opts "os-distribution" in
   let archive_path = Binary_repo.archive_path repo bname in
   let prefix = Sandbox_switch.switch_path_prefix sandbox in
-  let* files = Sandbox_switch.list_files opam_opts sandbox ~pkg:name in
+  let* files = Sandbox_switch.list_files opam_opts sandbox ~pkg:tool.name in
   let* bpkg =
     Binary_package.make_binary_package ~ocaml_version ~arch ~os_distribution
-      ~prefix ~files ~archive_path bname ~name ~pure_binary
+      ~prefix ~files ~archive_path bname ~name:tool.name
   in
   Binary_repo.add_binary_package repo bname bpkg
 
@@ -187,7 +185,7 @@ let get_compiler_pkg opam_opts =
   | None -> R.error_msgf "No compiler installed in your current switch."
 
 let should_install_pkg opam_opts ~version_list ~ocaml_version ~cache tool =
-  let { name; pure_binary; ocaml_version_dependent; required_version } = tool in
+  let { name; ocaml_version_dependent; required_version } = tool in
   let already_installed =
     match (List.assoc_opt name version_list, required_version) with
     | Some installed, Some required -> installed = required
@@ -200,7 +198,7 @@ let should_install_pkg opam_opts ~version_list ~ocaml_version ~cache tool =
     | Ok version ->
         let bname =
           Binary_package.binary_name ~ocaml_version ~name ~ver:version
-            ~pure_binary ~ocaml_version_dependent
+            ~ocaml_version_dependent
         in
         let build =
           if Cache.has_binary_pkg cache ~ocaml_version_dependent bname then None
@@ -298,12 +296,11 @@ let find_ocamlformat_version () =
 (** TODO: This should be moved to an other module to for example do automatic
     recognizing of ocamlformat's version. *)
 let platform () =
-  let tool ?(pure_binary = false) ?(required_version = None)
-      ?(ocaml_version_dependent = true) name =
-    { name; pure_binary; required_version; ocaml_version_dependent }
+  let tool ?(required_version = None) ?(ocaml_version_dependent = true) name =
+    { name; required_version; ocaml_version_dependent }
   in
   [
-    tool ~pure_binary:true "dune";
+    tool "dune";
     tool ~ocaml_version_dependent:false "dune-release";
     tool "merlin";
     tool "ocaml-lsp-server";

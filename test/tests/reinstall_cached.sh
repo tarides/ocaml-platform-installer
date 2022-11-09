@@ -10,7 +10,7 @@ eval `opam env`
 
 opam repository remove --set-default default
 
-opam remove ocamlformat+bin+platform odoc+bin+platform
+opam remove ocamlformat odoc
 
 ocaml-platform -vv
 

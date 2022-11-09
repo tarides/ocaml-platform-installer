@@ -9,7 +9,6 @@ val binary_name :
   ocaml_version:string ->
   name:string ->
   ver:string ->
-  pure_binary:bool ->
   ocaml_version_dependent:bool ->
   full_name
 
@@ -29,7 +28,6 @@ val make_binary_package :
   archive_path:Fpath.t ->
   full_name ->
   name:string ->
-  pure_binary:bool ->
   (binary_pkg, 'e) OS.result
 (** Make a binary package from the result of installing a package in the sandbox
     switch. *)
