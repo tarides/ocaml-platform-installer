@@ -188,8 +188,6 @@ let get_compiler_pkg opam_opts =
 
 let should_install_pkg opam_opts ~version_list ~ocaml_version ~cache tool =
   let { name; pure_binary; ocaml_version_dependent; required_version } = tool in
-  let push_repo = Cache.push_repo cache in
-  let pull_repo = Cache.pull_repo ~ocaml_version_dependent cache in
   let already_installed =
     match (List.assoc_opt name version_list, required_version) with
     | Some installed, Some required -> installed = required
@@ -205,14 +203,14 @@ let should_install_pkg opam_opts ~version_list ~ocaml_version ~cache tool =
             ~pure_binary ~ocaml_version_dependent
         in
         let build =
-          if Binary_repo.has_binary_pkg pull_repo bname then None
+          if Cache.has_binary_pkg cache ~ocaml_version_dependent bname then None
           else
             let build sandbox =
               let ocaml_version =
                 if ocaml_version_dependent then Some ocaml_version else None
               in
-              make_binary_package opam_opts ~ocaml_version sandbox push_repo
-                bname ~version tool
+              make_binary_package opam_opts ~ocaml_version sandbox
+                (Cache.push_repo cache) bname ~version tool
             in
             Some build
         in

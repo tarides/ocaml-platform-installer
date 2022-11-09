@@ -2,7 +2,11 @@ open! Import
 open Bos
 open Result.Syntax
 
-type t = { global_repo : Binary_repo.t; push_repo : Binary_repo.t option }
+type t = {
+  global_repo : Binary_repo.t;
+  push_repo : Binary_repo.t option;
+      (** [Some _] in case of a pinned compiler, [None] otherwise. *)
+}
 
 let load opam_opts ~pinned f =
   let global_binary_repo_path =
@@ -28,10 +32,11 @@ let load opam_opts ~pinned f =
   else (* Otherwise, use the global cache. *)
     f { global_repo; push_repo = None }
 
-let push_repo t = Option.value t.push_repo ~default:t.global_repo
+let has_binary_pkg t ~ocaml_version_dependent bname =
+  if ocaml_version_dependent && Option.is_some t.push_repo then false
+  else Binary_repo.has_binary_pkg t.global_repo bname
 
-let pull_repo ~ocaml_version_dependent t =
-  if ocaml_version_dependent then push_repo t else t.global_repo
+let push_repo t = Option.value t.push_repo ~default:t.global_repo
 
 let with_repos_enabled opam_opts t f =
   (* Add the global repository first. The last repo added will be looked up
