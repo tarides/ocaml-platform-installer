@@ -72,21 +72,19 @@ let remove_alpha_plus_suffix ver =
     [ocaml-system.5.0.0~alpha0] doesn't exist. *)
 let init_pkg_ocaml_system repo ~ocaml_version =
   let pkg = Package.v ~name:"ocaml-system" ~ver:ocaml_version in
-  if Repo.has_pkg repo pkg then Ok ()
-  else
-    let opam_file = Package.Opam_file.of_string @@ opam_file () in
-    let install_file =
-      Package.Install_file.v String.Map.empty ~pkg_name:(Package.name pkg)
-    in
-    let extra_files = [ ("gen_ocaml_config.ml.in", extra_file) ] in
-    Repo.add_package repo pkg ~extra_files ~install_file opam_file
+  let opam_file = Package.Opam_file.of_string @@ opam_file () in
+  let install_file =
+    Package.Install_file.v String.Map.empty ~pkg_name:(Package.name pkg)
+  in
+  let extra_files = [ ("gen_ocaml_config.ml.in", extra_file) ] in
+  Repo.add_package repo pkg ~extra_files ~install_file opam_file
 
-let init opam_opts ocaml_version =
+let with_sandbox_compiler_repo opam_opts ocaml_version f =
   let ocaml_version = remove_alpha_plus_suffix ocaml_version in
   let name = "platform_sandbox_compiler_packages" in
-  let path =
-    Fpath.(opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / name)
-  in
-  let* repo = Repo.init ~name path in
+  with_tmp_dir "compiler-package" @@ fun repo_path ->
+  let* repo = Repo.init ~name repo_path in
   let* () = init_pkg_ocaml_system repo ~ocaml_version in
-  Ok (repo, "ocaml-system." ^ ocaml_version)
+  let compiler_package = "ocaml-system." ^ ocaml_version in
+  Installed_repo.with_repo_enabled opam_opts repo @@ fun () ->
+  f compiler_package
