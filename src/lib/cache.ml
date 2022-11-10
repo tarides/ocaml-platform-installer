@@ -3,15 +3,24 @@ open Rresult
 open Bos
 open Result.Syntax
 
+let ( / ) = Fpath.( / )
+
 module Migrate = struct
   let current_version = 1
 
-  let migrate_data v =
-    if v = 0 then ();
-    Ok ()
+  let rec migrate_data plugin_path v =
+    let* () =
+      match v with
+      | 0 ->
+          (* Repository removed,
+             https://github.com/tarides/ocaml-platform-installer/pull/136 *)
+          OS.Dir.delete ~recurse:true
+            (plugin_path / "platform_sandbox_compiler_packages")
+      | _ -> Ok ()
+    in
+    if v + 1 >= current_version then Ok () else migrate_data plugin_path (v + 1)
 
-  let version_file plugin_path =
-    Fpath.( / ) plugin_path "ocaml-platform-version"
+  let version_file plugin_path = plugin_path / "ocaml-platform-version"
 
   let parse_version = function
     | [] | _ :: _ :: _ -> None
@@ -28,7 +37,6 @@ module Migrate = struct
         let* vcontent = OS.File.read_lines version_file in
         match parse_version vcontent with
         | None -> Result.errorf "Couldn't read cache version"
-        | Some v when v > current_version -> Error `Future_version
         | Some v -> Ok v
 
   let save_current_version plugin_path =
@@ -43,8 +51,9 @@ module Migrate = struct
   let migrate plugin_path =
     let* version = read_version plugin_path in
     if version = current_version then Ok ()
+    else if version > current_version then Error `Future_version
     else
-      let* () = migrate_data version in
+      let* () = migrate_data plugin_path version in
       save_current_version plugin_path
 
   (** Don't let an error disturb the workflow, wipe the cache. *)
@@ -71,9 +80,9 @@ type t = {
 
 let load opam_opts ~pinned =
   let plugin_path =
-    Fpath.(opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform")
+    opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform"
   in
-  let global_binary_repo_path = Fpath.( / ) plugin_path "cache" in
+  let global_binary_repo_path = plugin_path / "cache" in
   let* () = Migrate.migrate plugin_path in
   let* global_repo =
     Binary_repo.init ~name:"platform-cache" global_binary_repo_path
