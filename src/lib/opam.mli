@@ -58,8 +58,10 @@ end
 module Repository : sig
   val add :
     GlobalOpts.t -> path:Fpath.t -> string -> (unit, [> `Msg of string ]) result
+  (** Add a repository, act on the switch selected by the options. *)
 
   val remove : GlobalOpts.t -> string -> (unit, [> `Msg of string ]) result
+  (** Remove a repository, act on all switches. *)
 end
 
 module Show : sig
