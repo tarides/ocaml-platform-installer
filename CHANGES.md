@@ -2,6 +2,7 @@
 
 ## unreleased
 
+- Fix cached compiler package out of date. (#136)
 - Continue installing relevant tools even when some builds have failed (#133)
 - Fix OCamlformat is not installed to the right version if it was already
   installed. (#127)
