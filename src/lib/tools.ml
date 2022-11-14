@@ -277,7 +277,9 @@ let install opam_opts tools =
       in
       Logs.app (fun m ->
           m "  -> The following %s now installed: %a."
-            (if tools_to_install = [] then "tool is" else "tools are")
+            (match tools_to_install with
+            | [ _ ] -> "tool is"
+            | _ -> "tools are")
             Fmt.(list ~sep:(any ", ") string)
             (List.map fst tools_to_install));
       Ok tools_failed)
@@ -286,7 +288,7 @@ let install opam_opts tools =
     Logs.app (fun m ->
         let l = tools_not_installed @ List.map (fun x -> fst x) tools_failed in
         m "  -> The following %s been installed: %a"
-          (if l = [] then "tool hasn't" else "tools haven't")
+          (match l with [ _ ] -> "tool hasn't" | _ -> "tools haven't")
           Fmt.(list ~sep:(any ", ") string)
           l)
   else Logs.app (fun m -> m "* Success.");
