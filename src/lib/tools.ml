@@ -192,13 +192,13 @@ let install opam_opts tools =
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
   Logs.app (fun m -> m "* Inferring tools version...");
-  let* tools_to_build, tools_to_install, tools_not_installed =
+  let* tools_to_build, tools_in_cache, tools_non_installable =
     let* version_list =
       Opam.Show.installed_versions opam_opts
         (List.map (fun tool -> tool.name) tools)
     in
     Result.List.fold_left
-      (fun ((to_build, to_install, not_installed) as acc) tool ->
+      (fun ((to_build, in_cache, non_installable) as acc) tool ->
         match
           should_install_pkg opam_opts ~version_list ~ocaml_version ~global_repo
             ~push_repo tool
@@ -207,24 +207,29 @@ let install opam_opts tools =
             Logs.app (fun m -> m "  -> %s is already installed" tool.name);
             Ok acc
         | `Install (version, build, install) ->
-            let to_build, action_s =
+            let to_build, in_cache, action_s =
               match build with
               | Some build ->
-                  ((tool.name, build) :: to_build, "built from source")
-              | None -> (to_build, "installed from cache")
-            and to_install = (tool.name, install) :: to_install in
+                  ( ((tool.name, version), build) :: to_build,
+                    in_cache,
+                    "built from source" )
+              | None ->
+                  ( to_build,
+                    (tool.name, install) :: in_cache,
+                    "installed from cache" )
+            in
             Logs.app (fun m ->
                 m "  -> %s.%s will be %s" tool.name version action_s);
-            Ok (to_build, to_install, not_installed)
+            Ok (to_build, in_cache, non_installable)
         | `Not_available ->
             Logs.warn (fun m ->
                 m "%s cannot be installed with OCaml %s" tool.name ocaml_version);
-            Ok (to_build, to_install, tool.name :: not_installed)
+            Ok (to_build, in_cache, tool.name :: non_installable)
         | `Error err -> Error err)
       ([], [], []) tools
   in
   (match tools_to_build with
-  | [] -> Ok []
+  | [] -> Ok ([], [])
   | _ :: _ ->
       Logs.app (fun m -> m "* Building the tools...");
       Logs.app (fun m -> m "  -> Creating a sandbox...");
@@ -233,32 +238,29 @@ let install opam_opts tools =
           let n = List.length tools_to_build in
           Ok
             (List.fold_left
-               (fun tools_failed (i, (tool_name, build)) ->
+               (fun (tools_built, tools_failed)
+                    (i, ((tool_name, tool_version), build)) ->
                  Logs.app (fun m ->
                      m "  -> [%d/%d] Building %s..." (i + 1) n tool_name);
                  match build sandbox with
-                 | Ok () -> tools_failed
+                 | Ok () ->
+                     ((tool_name, tool_version) :: tools_built, tools_failed)
                  | Error e ->
                      Logs.warn (fun m ->
                          m
                            "There was an error during build of %s. Run with \
                             `-v` for more information."
                            tool_name);
-                     (tool_name, e) :: tools_failed)
-               []
+                     (tools_built, (tool_name, e) :: tools_failed))
+               ([], [])
                (List.mapi (fun i s -> (i, s)) tools_to_build))))
-  >>= fun tools_failed ->
-  (match tools_to_install with
-  | [] ->
+  >>= fun (tools_built, tools_failed) ->
+  (match (tools_in_cache, tools_to_build) with
+  | [], [] ->
       Logs.app (fun m -> m "  -> All tools are already installed");
       Ok []
   | _ ->
-      let tools_to_install =
-        let tools_failed_names = List.map (fun x -> fst x) tools_failed in
-        List.filter
-          (fun elem -> not (List.mem (fst elem) tools_failed_names))
-          tools_to_install
-      in
+      let tools_to_install = tools_in_cache @ tools_built in
       let* () =
         let with_repos_enabled repos f =
           List.fold_left
@@ -284,9 +286,11 @@ let install opam_opts tools =
             (List.map fst tools_to_install));
       Ok tools_failed)
   >>= fun tools_failed ->
-  if tools_not_installed <> [] || tools_failed <> [] then
+  if tools_non_installable <> [] || tools_failed <> [] then
     Logs.app (fun m ->
-        let l = tools_not_installed @ List.map (fun x -> fst x) tools_failed in
+        let l =
+          tools_non_installable @ List.map (fun x -> fst x) tools_failed
+        in
         m "  -> The following %s been installed: %a"
           (match l with [ _ ] -> "tool hasn't" | _ -> "tools haven't")
           Fmt.(list ~sep:(any ", ") string)
