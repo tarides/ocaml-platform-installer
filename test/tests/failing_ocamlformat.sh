@@ -13,7 +13,7 @@ opam remove ocamlformat+bin+platform odoc+bin+platform
 sed -i 's/0.19.0/0.24.1/g' .ocamlformat
 
 # Run the installed
-ocaml-platform -vv || echo "Fails because ocamlformat builds failed"
+! ocaml-platform -vv
 
 # Check that ocaml-platform has updated the state as intended:
 # - ocamlformat binary package build has failed
