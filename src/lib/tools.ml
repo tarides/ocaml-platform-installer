@@ -12,6 +12,76 @@ type tool = {
   ocaml_version_dependent : bool;
 }
 
+module Communication = struct
+  let enter_version_stage () =
+    Logs.app (fun m -> m "* Inferring tools version...")
+
+  let enter_building_stage tools_to_build =
+    if tools_to_build <> [] then Logs.app (fun m -> m "* Building the tools...")
+
+  let enter_creating_sandbox () =
+    Logs.app (fun m -> m "  -> Creating a sandbox...")
+
+  let building_tool tool_name i n =
+    Logs.app (fun m -> m "  -> [%d/%d] Building %s..." (i + 1) n tool_name)
+
+  let error_in_build tool_name =
+    Logs.warn (fun m -> m "There was an error during build of %s." tool_name)
+
+  let conclusion tools_non_installable tools_failed =
+    let not_installed = tools_non_installable @ List.map fst tools_failed in
+    match not_installed with
+    | [] ->
+        Logs.app (fun m -> m "* Success.");
+        Logs.app (fun m ->
+            m
+              "* For more information on the platform tools, run \
+               `ocaml-platform --help`")
+    | [ tool ] ->
+        Logs.app (fun m ->
+            m
+              "  -> The following tools hasn't been installed: %s. Run with \
+               `-v` for more information."
+              tool)
+    | tools_not_installed ->
+        Logs.app (fun m ->
+            m
+              "  -> The following tools haven't been installed: %a. Run with \
+               `-v` for more information."
+              Fmt.(list ~sep:(any ", ") string)
+              tools_not_installed)
+
+  let conclusion_installing = function
+    | [] -> Logs.app (fun m -> m "  -> Nothing to install.")
+    | [ (tool, _) ] ->
+        Logs.app (fun m ->
+            m "  -> The following tool is now installed: %s." tool)
+    | tools_to_install ->
+        Logs.app (fun m ->
+            m "  -> The following tools are now installed: %a."
+              Fmt.(list ~sep:(any ", ") string)
+              (List.map fst tools_to_install))
+
+  let warn_pinned_detected () =
+    Logs.app (fun m -> m "* Pinned compiler detected. Caching is disabled.")
+
+  let enter_install_stage () = Logs.app (fun m -> m "* Installing tools...")
+
+  let tell_version_result tool r ocaml_version =
+    match r with
+    | `Skip -> Logs.app (fun m -> m "  -> %s is already installed" tool.name)
+    | `Install (version, Some _, _) ->
+        let action_s = "built from source" in
+        Logs.app (fun m -> m "  -> %s.%s will be %s" tool.name version action_s)
+    | `Install (version, None, _) ->
+        let action_s = "installed from cache" in
+        Logs.app (fun m -> m "  -> %s.%s will be %s" tool.name version action_s)
+    | `Not_available ->
+        Logs.warn (fun m ->
+            m "%s cannot be installed with OCaml %s" tool.name ocaml_version)
+    | `Error _ -> ()
+end
+
 let parse_constraints s =
   let open Angstrom in
   let is_whitespace = function
@@ -134,7 +204,7 @@ let get_cache_repo opam_opts ~pinned f =
   if pinned then (
     (* Pinned compiler: don't actually cache the result by using a temporary
        repository. *)
-    Logs.app (fun m -> m "* Pinned compiler detected. Caching is disabled.");
+    Communication.warn_pinned_detected ();
     Result.join
     @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
          (fun tmp_path () ->
@@ -191,7 +261,7 @@ let install opam_opts tools =
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
-  Logs.app (fun m -> m "* Inferring tools version...");
+  Communication.enter_version_stage ();
   let* tools_to_build, tools_in_cache, tools_non_installable =
     let* version_list =
       Opam.Show.installed_versions opam_opts
@@ -199,107 +269,61 @@ let install opam_opts tools =
     in
     Result.List.fold_left
       (fun ((to_build, in_cache, non_installable) as acc) tool ->
-        match
+        let action =
           should_install_pkg opam_opts ~version_list ~ocaml_version ~global_repo
             ~push_repo tool
-        with
-        | `Skip ->
-            Logs.app (fun m -> m "  -> %s is already installed" tool.name);
-            Ok acc
-        | `Install (version, build, install) ->
-            let to_build, in_cache, action_s =
-              match build with
-              | Some build ->
-                  ( ((tool.name, version), build) :: to_build,
-                    in_cache,
-                    "built from source" )
-              | None ->
-                  ( to_build,
-                    (tool.name, install) :: in_cache,
-                    "installed from cache" )
-            in
-            Logs.app (fun m ->
-                m "  -> %s.%s will be %s" tool.name version action_s);
+        in
+        Communication.tell_version_result tool action ocaml_version;
+        match action with
+        | `Skip -> Ok acc
+        | `Install (version, Some build, _) ->
+            let to_build = ((tool.name, version), build) :: to_build in
             Ok (to_build, in_cache, non_installable)
-        | `Not_available ->
-            Logs.warn (fun m ->
-                m "%s cannot be installed with OCaml %s" tool.name ocaml_version);
-            Ok (to_build, in_cache, tool.name :: non_installable)
+        | `Install (_, None, install) ->
+            let in_cache = (tool.name, install) :: in_cache in
+            Ok (to_build, in_cache, non_installable)
+        | `Not_available -> Ok (to_build, in_cache, tool.name :: non_installable)
         | `Error err -> Error err)
       ([], [], []) tools
   in
-  (match tools_to_build with
-  | [] -> Ok ([], [])
-  | _ :: _ ->
-      Logs.app (fun m -> m "* Building the tools...");
-      Logs.app (fun m -> m "  -> Creating a sandbox...");
-      Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version
-        (fun sandbox ->
-          let n = List.length tools_to_build in
-          Ok
-            (List.fold_left
-               (fun (tools_built, tools_failed)
-                    (i, ((tool_name, tool_version), build)) ->
-                 Logs.app (fun m ->
-                     m "  -> [%d/%d] Building %s..." (i + 1) n tool_name);
-                 match build sandbox with
-                 | Ok () ->
-                     ((tool_name, tool_version) :: tools_built, tools_failed)
-                 | Error e ->
-                     Logs.warn (fun m ->
-                         m
-                           "There was an error during build of %s. Run with \
-                            `-v` for more information."
-                           tool_name);
-                     (tools_built, (tool_name, e) :: tools_failed))
-               ([], [])
-               (List.mapi (fun i s -> (i, s)) tools_to_build))))
+  (Communication.enter_building_stage tools_to_build;
+   Communication.enter_creating_sandbox ();
+   Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version (fun sandbox ->
+       let n = List.length tools_to_build in
+       Ok
+         (List.fold_left
+            (fun (tools_built, tools_failed)
+                 (i, ((tool_name, tool_version), build)) ->
+              Communication.building_tool tool_name i n;
+              match build sandbox with
+              | Ok () -> ((tool_name, tool_version) :: tools_built, tools_failed)
+              | Error e ->
+                  Communication.error_in_build tool_name;
+                  (tools_built, (tool_name, e) :: tools_failed))
+            ([], [])
+            (List.mapi (fun i s -> (i, s)) tools_to_build))))
   >>= fun (tools_built, tools_failed) ->
-  (match (tools_in_cache, tools_to_build) with
-  | [], [] ->
-      Logs.app (fun m -> m "  -> All tools are already installed");
-      Ok []
-  | _ ->
-      let tools_to_install = tools_in_cache @ tools_built in
-      let* () =
-        let with_repos_enabled repos f =
-          List.fold_left
-            (fun k repo () ->
-              let repo = Binary_repo.repo repo in
-              Installed_repo.with_repo_enabled opam_opts repo @@ fun () ->
-              let* () = Installed_repo.update opam_opts repo in
-              k ())
-            f repos ()
-        in
-        with_repos_enabled install_repos @@ fun () ->
-        Logs.app (fun m -> m "* Installing tools...");
-        Opam.install
-          { opam_opts with log_height = Some 10 }
-          (List.map snd tools_to_install)
-      in
-      Logs.app (fun m ->
-          m "  -> The following %s now installed: %a."
-            (match tools_to_install with
-            | [ _ ] -> "tool is"
-            | _ -> "tools are")
-            Fmt.(list ~sep:(any ", ") string)
-            (List.map fst tools_to_install));
-      Ok tools_failed)
+  (Communication.enter_install_stage ();
+   let tools_to_install = tools_in_cache @ tools_built in
+   let* () =
+     let with_repos_enabled repos f =
+       List.fold_left
+         (fun k repo () ->
+           let repo = Binary_repo.repo repo in
+           Installed_repo.with_repo_enabled opam_opts repo @@ fun () ->
+           let* () = Installed_repo.update opam_opts repo in
+           k ())
+         f repos ()
+     in
+     with_repos_enabled install_repos @@ fun () ->
+     Opam.install
+       { opam_opts with log_height = Some 10 }
+       (List.map snd tools_to_install)
+   in
+   Communication.conclusion_installing tools_to_install;
+   Ok tools_failed)
   >>= fun tools_failed ->
-  if tools_non_installable <> [] || tools_failed <> [] then
-    Logs.app (fun m ->
-        let l =
-          tools_non_installable @ List.map (fun x -> fst x) tools_failed
-        in
-        m "  -> The following %s been installed: %a"
-          (match l with [ _ ] -> "tool hasn't" | _ -> "tools haven't")
-          Fmt.(list ~sep:(any ", ") string)
-          l)
-  else Logs.app (fun m -> m "* Success.");
-  Logs.app (fun m ->
-      m
-        "* For more information on the platform tools, run `ocaml-platform \
-         --help`");
+  Communication.conclusion tools_non_installable tools_failed;
   if tools_failed <> [] then Error (`Multi (List.map snd tools_failed))
   else Ok ()
 
