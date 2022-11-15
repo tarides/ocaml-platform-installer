@@ -13,6 +13,11 @@ type tool = {
 }
 
 module Communication = struct
+  let list_plural list ppf (singular, plural) =
+    match list with
+    | [ _ ] -> Format.fprintf ppf "%s" singular
+    | _ -> Format.fprintf ppf "%s" plural
+
   let enter_version_stage () =
     Logs.app (fun m -> m "* Inferring tools version...")
 
@@ -36,28 +41,23 @@ module Communication = struct
             m
               "* For more information on the platform tools, run \
                `ocaml-platform --help`")
-    | [ tool ] ->
-        Logs.app (fun m ->
-            m
-              "  -> The following tools hasn't been installed: %s. Run with \
-               `-v` for more information."
-              tool)
     | tools_not_installed ->
         Logs.app (fun m ->
             m
-              "  -> The following tools haven't been installed: %a. Run with \
-               `-v` for more information."
+              "  -> The following %a been installed: %a. Run with `-v` for \
+               more information."
+              (list_plural tools_not_installed)
+              ("tool hasn't", "tools haven't")
               Fmt.(list ~sep:(any ", ") string)
               tools_not_installed)
 
   let conclusion_installing = function
     | [] -> Logs.app (fun m -> m "  -> Nothing to install.")
-    | [ (tool, _) ] ->
-        Logs.app (fun m ->
-            m "  -> The following tool is now installed: %s." tool)
     | tools_to_install ->
         Logs.app (fun m ->
-            m "  -> The following tools are now installed: %a."
+            m "  -> The following %a now installed: %a."
+              (list_plural tools_to_install)
+              ("tool is", "tools are")
               Fmt.(list ~sep:(any ", ") string)
               (List.map fst tools_to_install))
 
