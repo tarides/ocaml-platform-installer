@@ -13,7 +13,7 @@ type tool = {
 }
 
 module Communication = struct
-  let list_plural list ppf (singular, plural) =
+  let list_plural list singular plural ppf =
     match list with
     | [ _ ] -> Format.fprintf ppf "%s" singular
     | _ -> Format.fprintf ppf "%s" plural
@@ -44,10 +44,9 @@ module Communication = struct
     | tools_not_installed ->
         Logs.app (fun m ->
             m
-              "  -> The following %a been installed: %a. Run with `-v` for \
+              "  -> The following %t been installed: %a. Run with `-v` for \
                more information."
-              (list_plural tools_not_installed)
-              ("tool hasn't", "tools haven't")
+              (list_plural tools_not_installed "tool hasn't" "tools haven't")
               Fmt.(list ~sep:(any ", ") string)
               tools_not_installed)
 
@@ -55,9 +54,8 @@ module Communication = struct
     | [] -> Logs.app (fun m -> m "  -> Nothing to install.")
     | tools_to_install ->
         Logs.app (fun m ->
-            m "  -> The following %a now installed: %a."
-              (list_plural tools_to_install)
-              ("tool is", "tools are")
+            m "  -> The following %t now installed: %a."
+              (list_plural tools_to_install "tool is" "tools are")
               Fmt.(list ~sep:(any ", ") string)
               (List.map fst tools_to_install))
 
