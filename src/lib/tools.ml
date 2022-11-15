@@ -16,8 +16,7 @@ module Communication = struct
   let enter_version_stage () =
     Logs.app (fun m -> m "* Inferring tools version...")
 
-  let enter_building_stage tools_to_build =
-    if tools_to_build <> [] then Logs.app (fun m -> m "* Building the tools...")
+  let enter_building_stage () = Logs.app (fun m -> m "* Building the tools...")
 
   let enter_creating_sandbox () =
     Logs.app (fun m -> m "  -> Creating a sandbox...")
@@ -286,7 +285,8 @@ let install opam_opts tools =
         | `Error err -> Error err)
       ([], [], []) tools
   in
-  (Communication.enter_building_stage tools_to_build;
+  (if tools_to_build <> [] then (
+   Communication.enter_building_stage ();
    Communication.enter_creating_sandbox ();
    Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version (fun sandbox ->
        let n = List.length tools_to_build in
@@ -302,6 +302,7 @@ let install opam_opts tools =
                   (tools_built, (tool_name, e) :: tools_failed))
             ([], [])
             (List.mapi (fun i s -> (i, s)) tools_to_build))))
+  else Ok ([], []))
   >>= fun (tools_built, tools_failed) ->
   (Communication.enter_install_stage ();
    let tools_to_install = tools_in_cache @ tools_built in
