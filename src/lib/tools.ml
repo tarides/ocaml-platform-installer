@@ -276,8 +276,8 @@ let install opam_opts tools =
         Communication.tell_version_result tool action ocaml_version;
         match action with
         | `Skip -> Ok acc
-        | `Install (version, Some build, _) ->
-            let to_build = ((tool.name, version), build) :: to_build in
+        | `Install (_, Some build, install) ->
+            let to_build = ((tool.name, install), build) :: to_build in
             Ok (to_build, in_cache, non_installable)
         | `Install (_, None, install) ->
             let in_cache = (tool.name, install) :: in_cache in
