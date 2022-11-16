@@ -1,4 +1,5 @@
 open Rresult
+open Import
 
 type t
 (** Represent the cache repositories for binary packages. The global cache is
@@ -29,10 +30,9 @@ val has_binary_pkg :
 val push_repo : t -> Binary_repo.t
 (** The repository in which to add newly built packages. *)
 
-val with_repos_enabled :
+val enable_repos :
   Opam.GlobalOpts.t ->
   t ->
-  (unit -> ('a, ([> R.msg ] as 'e)) result) ->
-  ('a, 'e) result
+  (unit, 'e) Result.or_msg
 (** [with_repos_enabled cache f] calls [f] with the global and the push repo
     enabled. *)
