@@ -38,14 +38,13 @@ let has_binary_pkg t ~ocaml_version_dependent bname =
 
 let push_repo t = Option.value t.push_repo ~default:t.global_repo
 
-let with_repos_enabled opam_opts t f =
+let enable_repos opam_opts t =
   (* Add the global repository first. The last repo added will be looked up
      first. *)
   let repos = t.global_repo :: Option.to_list t.push_repo in
-  List.fold_left
-    (fun k repo () ->
+  Result.List.fold_left
+    (fun () repo ->
       let repo = Binary_repo.repo repo in
-      Installed_repo.with_repo_enabled opam_opts repo @@ fun () ->
-      let* () = Installed_repo.update opam_opts repo in
-      k ())
-    f repos ()
+      let* () = Installed_repo.enable_repo opam_opts repo in
+      Installed_repo.update opam_opts repo)
+    () repos

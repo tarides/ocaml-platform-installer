@@ -271,7 +271,7 @@ let install opam_opts tools =
   (Communication.enter_install_stage ();
    let tools_to_install = tools_in_cache @ tools_built in
    let* () =
-     Cache.with_repos_enabled opam_opts cache @@ fun () ->
+     let* () = Cache.enable_repos opam_opts cache in
      Opam.install
        { opam_opts with log_height = Some 10 }
        (List.map snd tools_to_install)
