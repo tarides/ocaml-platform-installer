@@ -1,5 +1,4 @@
 open! Import
-open Bos
 open Result.Syntax
 
 type t = {
@@ -8,7 +7,7 @@ type t = {
       (** [Some _] in case of a pinned compiler, [None] otherwise. *)
 }
 
-let load opam_opts ~pinned f =
+let load opam_opts ~pinned =
   let global_binary_repo_path =
     Fpath.(
       opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform" / "cache")
@@ -20,17 +19,17 @@ let load opam_opts ~pinned f =
     (* Pinned compiler: don't actually cache the result by using a temporary
        repository. *)
     Logs.app (fun m -> m "* Pinned compiler detected. Caching is disabled.");
-    Result.join
-    @@ OS.Dir.with_tmp "ocaml-platform-pinned-cache-%s"
-         (fun tmp_path () ->
-           let name =
-             "ocaml-platform-pinned-cache-" ^ Fpath.to_string tmp_path
-           in
-           let* push_repo = Binary_repo.init ~name tmp_path in
-           f { global_repo; push_repo = Some push_repo })
-         ())
-  else (* Otherwise, use the global cache. *)
-    f { global_repo; push_repo = None }
+    let* switch_path =
+      let+ switch_prefix = Opam.Config.Var.get opam_opts "prefix" in
+      Fpath.(v switch_prefix / "var" / "cache" / "ocaml-platform")
+    in
+    let hash = Hashtbl.hash switch_path in
+    let name = Printf.sprintf "ocaml-platform-pinned-cache-%d" hash in
+    let+ push_repo = Binary_repo.init ~name switch_path in
+    { global_repo; push_repo = Some push_repo })
+  else
+    (* Otherwise, use the global cache. *)
+    Ok { global_repo; push_repo = None }
 
 let has_binary_pkg t ~ocaml_version_dependent bname =
   if ocaml_version_dependent && Option.is_some t.push_repo then false

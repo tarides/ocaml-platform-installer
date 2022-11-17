@@ -1,4 +1,3 @@
-open Rresult
 open Import
 
 type t
@@ -7,16 +6,13 @@ type t
     packages that can't be stored in the global cache (eg. because building for
     a pinned compiler). *)
 
-val load :
-  Opam.GlobalOpts.t ->
-  pinned:bool ->
-  (t -> ('a, ([> R.msg ] as 'e)) result) ->
-  ('a, 'e) result
+val load : Opam.GlobalOpts.t -> pinned:bool -> (t, 'e) Result.or_msg
 (** Manage initialisation of the cache repository.
 
-    When building for a pinned compiler (indicated by [~pinned:true]), an
-    ephemeral repository is used instead of the global cache for storing the new
-    packages. *)
+    When building for a pinned compiler (indicated by [~pinned:true]), a local
+    repository is used instead of the global cache for storing the new packages.
+    The repository is stored in [<switch-prefix>/var/cache/ocaml-platform], and
+    its name is computed from [<switch-prefix>]. *)
 
 val has_binary_pkg :
   t -> ocaml_version_dependent:bool -> Binary_package.full_name -> bool
@@ -30,9 +26,6 @@ val has_binary_pkg :
 val push_repo : t -> Binary_repo.t
 (** The repository in which to add newly built packages. *)
 
-val enable_repos :
-  Opam.GlobalOpts.t ->
-  t ->
-  (unit, 'e) Result.or_msg
+val enable_repos : Opam.GlobalOpts.t -> t -> (unit, 'e) Result.or_msg
 (** [with_repos_enabled cache f] calls [f] with the global and the push repo
     enabled. *)
