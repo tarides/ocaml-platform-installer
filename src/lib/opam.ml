@@ -148,6 +148,8 @@ module Switch = struct
 
   let remove opam_opts name =
     Cmd.run_s opam_opts Bos.Cmd.(v "switch" % "remove" % name)
+
+  let show opam_opts = Cmd.run_s opam_opts Bos.Cmd.(v "switch" % "show")
 end
 
 module Repository = struct

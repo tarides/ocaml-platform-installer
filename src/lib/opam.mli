@@ -53,6 +53,7 @@ module Switch : sig
       installed. *)
 
   val remove : GlobalOpts.t -> string -> (string, [> `Msg of string ]) result
+  val show : GlobalOpts.t -> (string, [> `Msg of string ]) result
 end
 
 module Repository : sig

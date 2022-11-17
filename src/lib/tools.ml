@@ -221,7 +221,7 @@ let should_install_pkg opam_opts ~version_list ~ocaml_version ~cache tool =
 let install opam_opts tools =
   let* compiler_pkg, pinned = get_compiler_pkg opam_opts in
   let ocaml_version = Package.ver compiler_pkg in
-  Cache.load opam_opts ~pinned @@ fun cache ->
+  let* cache = Cache.load opam_opts ~pinned in
   (* [tools_to_build] is the list of tools that need to be built and placed in
      the cache. [tools_to_install] is the names of the packages to install into
      the user's switch, each string is a suitable argument to [opam install]. *)
