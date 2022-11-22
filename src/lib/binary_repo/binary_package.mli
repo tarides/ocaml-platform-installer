@@ -17,6 +17,9 @@ val name : full_name -> string
 val ver : full_name -> string
 val package : full_name -> Package.full_name
 
+val version_is_binary : string -> bool
+(** Tell from the version if the package is a binary package. *)
+
 type binary_pkg = Package.Install_file.t * Package.Opam_file.t
 
 val make_binary_package :
