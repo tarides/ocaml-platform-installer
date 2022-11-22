@@ -107,14 +107,12 @@ let main () =
           ( "The local binary opam repository",
             "All built tools are cached in a local opam repository. The \
              packages in this repository consists of pre-compiled packages \
-             with no libraries. When the original package contains libraries, \
-             it differs from the binary package. In this case, the name of the \
-             binary package is suffixed with $(b,+bin+platform), and \
-             installing the original package (for instance to have the \
-             library) will replace the platform one. In any case, the version \
-             of a package in the local repository contains both the original \
-             version and the ocaml version they were compiled with, as this \
-             may be important for some tools." );
+             with no libraries. The version of the binary package is suffixed \
+             with $(b,platform). When the package depend on the version of the \
+             compiler that used it, this information is also included in the \
+             version, for instance $(b,odoc) as a binary package package could \
+             have version $(b,2.1.1-ocaml4.13.1+platform). Pinned compiler \
+             have their own local binary opam repository." );
         `I
           ( "The overall logic",
             "When prompted to install the platform tools, for a given switch, \
