@@ -7,7 +7,7 @@ sed -i 's/sha512=[a-zA-Z0-9]*/sha512=c38a5bc6ab23186fc2ab0ba08719e84b038c529c4d7
 opam update
 
 # We removed installed versions
-opam remove ocamlformat+bin+platform odoc+bin+platform
+opam remove ocamlformat odoc
 
 # And force next installation to be 0.24.1
 sed -i 's/0.19.0/0.24.1/g' .ocamlformat
@@ -19,5 +19,5 @@ sed -i 's/0.19.0/0.24.1/g' .ocamlformat
 # - ocamlformat binary package build has failed
 # - odoc has been reinstalled
 
-! opam show ocamlformat+bin+platform
-opam show odoc+bin+platform
+! opam show ocamlformat
+opam show odoc
