@@ -128,19 +128,23 @@ let best_available_version opam_opts ocaml_version name =
   let+ versions = Opam.Show.available_versions opam_opts name in
   versions
   |> List.find_opt (fun version ->
-         let ocaml_depends =
-           let+ depends = Opam.Show.depends opam_opts (name ^ "." ^ version) in
-           List.find_opt (String.is_prefix ~affix:"\"ocaml\"") depends
-         in
-         match ocaml_depends with
-         | Ok (Some ocaml_constraint) ->
-             let result =
-               parse_constraints ocaml_constraint >>| fun constraints ->
-               verify_constraints ocaml_version constraints
+         if Binary_package.version_is_binary version then false
+         else
+           let ocaml_depends =
+             let+ depends =
+               Opam.Show.depends opam_opts (name ^ "." ^ version)
              in
-             Result.value ~default:false result
-         | Ok None -> true
-         | _ -> false)
+             List.find_opt (String.is_prefix ~affix:"\"ocaml\"") depends
+           in
+           match ocaml_depends with
+           | Ok (Some ocaml_constraint) ->
+               let result =
+                 parse_constraints ocaml_constraint >>| fun constraints ->
+                 verify_constraints ocaml_version constraints
+               in
+               Result.value ~default:false result
+           | Ok None -> true
+           | _ -> false)
 
 (** The version of a tool that should be installed. Might returns the error
     [`Not_found]. *)

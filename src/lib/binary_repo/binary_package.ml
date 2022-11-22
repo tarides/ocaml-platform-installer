@@ -41,13 +41,18 @@ end
 
 type full_name = Package.full_name
 
+(** The suffix that is appended to the version for binary packages. *)
+let version_suffix = "+platform"
+
 (** Name and version of the binary package corresponding to a given package. *)
 let binary_name ~ocaml_version ~name ~ver ~ocaml_version_dependent =
   let ver =
     if ocaml_version_dependent then ver ^ "-ocaml" ^ ocaml_version else ver
   in
+  let ver = ver ^ version_suffix in
   Package.v ~name ~ver
 
+let version_is_binary version = String.is_suffix ~affix:version_suffix version
 let name = Package.name
 let ver = Package.ver
 let package t = t
