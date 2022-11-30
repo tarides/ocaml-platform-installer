@@ -79,16 +79,19 @@ type t = {
 }
 
 let load opam_opts ~pinned =
+  let init_with_migration ~name plugin_path =
+    let global_binary_repo_path = plugin_path / "cache" in
+    let* () = Migrate.migrate plugin_path in
+    Binary_repo.init ~name global_binary_repo_path
+  in
   let plugin_path =
     opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform"
   in
-  let global_binary_repo_path = plugin_path / "cache" in
-  let* () = Migrate.migrate plugin_path in
   let* global_repo =
-    Binary_repo.init ~name:"platform-cache" global_binary_repo_path
+    init_with_migration ~name:"platform-cache" plugin_path
   in
   if pinned then (
-    (* Pinned compiler: don't actually cache the result by using a temporary
+    (* Pinned compiler: don't actually cache the result by using a local
        repository. *)
     Logs.app (fun m -> m "* Pinned compiler detected. Caching is disabled.");
     let* switch_path =
@@ -97,7 +100,7 @@ let load opam_opts ~pinned =
     in
     let hash = Hashtbl.hash switch_path in
     let name = Printf.sprintf "ocaml-platform-pinned-cache-%d" hash in
-    let+ push_repo = Binary_repo.init ~name switch_path in
+    let+ push_repo = init_with_migration ~name switch_path in
     { global_repo; push_repo = Some push_repo })
   else
     (* Otherwise, use the global cache. *)
