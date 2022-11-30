@@ -5,22 +5,86 @@ open Result.Syntax
 
 let ( / ) = Fpath.( / )
 
+module type Migrater = sig
+  val migrate : Fpath.t -> (unit, [> `Msg of string ]) result
+end
+
+module Migrate_0_to_1 : Migrater = struct
+  (** Constants *)
+
+  let old_name_suffix = "+bin+platform"
+  let new_version_suffix = "+platform"
+
+  (** Helpers *)
+
+  let replace_with old new_ s =
+    Astring.String.cuts ~sep:old s |> String.concat new_
+
+  let strip_suffix s = replace_with old_name_suffix "" s
+
+  let modify_name f path =
+    let base, name = Fpath.split_base path in
+    let new_name = f (Fpath.to_string name) in
+    let new_path = base / new_name in
+    if Fpath.equal path new_path then Ok ()
+    else Bos.OS.Cmd.run Cmd.(v "mv" % p path % p new_path)
+
+  let iter_subdir f dir =
+    let* subdirs = OS.Dir.contents dir in
+    List.fold_left
+      (fun acc subdir ->
+        let* () = acc in
+        f subdir)
+      (Ok ()) subdirs
+
+  let migrate_suffix ~suffix s =
+    s |> strip_suffix |> replace_with suffix (new_version_suffix ^ suffix)
+
+  (** Migraters *)
+
+  (** The opam files contain a link to the archive: update that. *)
+  let migrate_opam opam =
+    let* content = OS.File.read opam in
+    let new_content = migrate_suffix ~suffix:".tar.gz" content in
+    OS.File.write opam new_content
+
+  (** The name of install file contains the package name: update that. *)
+  let migrate_install install = modify_name strip_suffix install
+
+  (** The name of a pkg ver directory contains the package name and the version:
+      update that, and migrate the install file and the opam file. *)
+  let migrate_version pkgver =
+    let* () = iter_subdir migrate_install (pkgver / "files") in
+    let* () = migrate_opam (pkgver / "opam") in
+    modify_name (fun name -> strip_suffix name ^ new_version_suffix) pkgver
+
+  (** The name of a pkg directory contains the package name: update that, and
+      migrate all pkgver directory inside. *)
+  let migrate_package pkg =
+    let* () = iter_subdir migrate_version pkg in
+    modify_name strip_suffix pkg
+
+  (** The name of an archive contains the package name and version: update that. *)
+  let migrate_archive archive =
+    modify_name (migrate_suffix ~suffix:".tar.gz") archive
+
+  (** Migrate all packages and archives. *)
+  let migrate plugin_path =
+    let packages_path = plugin_path / "cache" / "repo" / "packages" in
+    let* () = iter_subdir migrate_package packages_path in
+    let archive_path = plugin_path / "cache" / "archives" in
+    iter_subdir migrate_archive archive_path
+end
+
 module Migrate = struct
   let current_version = 1
+  let version_file plugin_path = plugin_path / "ocaml-platform-version"
 
   let rec migrate_data plugin_path v =
     let* () =
-      match v with
-      | 0 ->
-          (* Repository removed,
-             https://github.com/tarides/ocaml-platform-installer/pull/136 *)
-          OS.Dir.delete ~recurse:true
-            (plugin_path / "platform_sandbox_compiler_packages")
-      | _ -> Ok ()
+      match v with 0 -> Migrate_0_to_1.migrate plugin_path | _ -> Ok ()
     in
     if v + 1 >= current_version then Ok () else migrate_data plugin_path (v + 1)
-
-  let version_file plugin_path = plugin_path / "ocaml-platform-version"
 
   let parse_version = function
     | [] | _ :: _ :: _ -> None
@@ -68,8 +132,7 @@ module Migrate = struct
     | Error (`Msg msg) ->
         Logs.warn (fun f ->
             f "Deleting the cache due to a migration error (%s)" msg);
-        let* () = wipe_plugin_data plugin_path in
-        Ok ()
+        wipe_plugin_data plugin_path
 end
 
 type t = {
@@ -87,9 +150,7 @@ let load opam_opts ~pinned =
   let plugin_path =
     opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform"
   in
-  let* global_repo =
-    init_with_migration ~name:"platform-cache" plugin_path
-  in
+  let* global_repo = init_with_migration ~name:"platform-cache" plugin_path in
   if pinned then (
     (* Pinned compiler: don't actually cache the result by using a local
        repository. *)
