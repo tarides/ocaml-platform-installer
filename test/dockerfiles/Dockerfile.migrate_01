@@ -1,0 +1,13 @@
+ARG TARGETPLATFORM=$TARGETPLATFORM
+
+FROM ocaml-platform-build-$TARGETPLATFORM:latest as base
+
+FROM panglesd/ocaml-platform-installer:ocaml-platform-install-linux_amd64-v0.6.0
+
+COPY --from=base /usr/local/bin/ocaml-platform /usr/local/bin/ocaml-platform
+
+RUN true
+
+COPY test/tests/reinstall_cached.sh .
+
+RUN bash reinstall_cached.sh
