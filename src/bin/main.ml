@@ -108,11 +108,11 @@ let main () =
             "All built tools are cached in a local opam repository. The \
              packages in this repository consists of pre-compiled packages \
              with no libraries. The version of the binary package is suffixed \
-             with $(b,platform). When the package depend on the version of the \
-             compiler that used it, this information is also included in the \
-             version, for instance $(b,odoc) as a binary package package could \
-             have version $(b,2.1.1-ocaml4.13.1+platform). Pinned compiler \
-             have their own local binary opam repository." );
+             with $(b,+platform). When the package depend on the version of \
+             the compiler that used it, this information is also included in \
+             the version, for instance $(b,odoc) as a binary package package \
+             could have version $(b,2.1.1-ocaml4.13.1+platform). Pinned \
+             compiler have their own local binary opam repository." );
         `I
           ( "The overall logic",
             "When prompted to install the platform tools, for a given switch, \
