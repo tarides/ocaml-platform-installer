@@ -5,6 +5,33 @@ open Result.Syntax
 
 let ( / ) = Fpath.( / )
 
+module Versioning = struct
+  let current_version = 1
+  let version_file plugin_path = plugin_path / "ocaml-platform-version"
+
+  let save_current_version plugin_path =
+    OS.File.write_lines (version_file plugin_path)
+      [ string_of_int current_version ]
+
+  let parse_version = function
+    | [] | _ :: _ :: _ -> None
+    | [ v ] -> int_of_string_opt v
+
+  let read_version plugin_path =
+    let* pexists = OS.Dir.exists plugin_path in
+    if not pexists then Ok None
+    else
+      let version_file = version_file plugin_path in
+      let* vexists = OS.File.exists version_file in
+      if not vexists then Ok (Some 0)
+        (* Old enough to not have a version file *)
+      else
+        let* vcontent = OS.File.read_lines version_file in
+        match parse_version vcontent with
+        | None -> Result.errorf "Couldn't read cache version"
+        | Some v -> Ok (Some v)
+end
+
 module type Migrater = sig
   val migrate : Fpath.t -> (unit, [> `Msg of string ]) result
 end
@@ -77,35 +104,13 @@ module Migrate_0_to_1 : Migrater = struct
 end
 
 module Migrate = struct
-  let current_version = 1
-  let version_file plugin_path = plugin_path / "ocaml-platform-version"
+  open Versioning
 
   let rec migrate_data plugin_path v =
     let* () =
       match v with 0 -> Migrate_0_to_1.migrate plugin_path | _ -> Ok ()
     in
     if v + 1 >= current_version then Ok () else migrate_data plugin_path (v + 1)
-
-  let parse_version = function
-    | [] | _ :: _ :: _ -> None
-    | [ v ] -> int_of_string_opt v
-
-  let read_version plugin_path =
-    let* pexists = OS.Dir.exists plugin_path in
-    if not pexists then Ok current_version (* No migration to do *)
-    else
-      let version_file = version_file plugin_path in
-      let* vexists = OS.File.exists version_file in
-      if not vexists then Ok 0 (* Old enough to not have a version file *)
-      else
-        let* vcontent = OS.File.read_lines version_file in
-        match parse_version vcontent with
-        | None -> Result.errorf "Couldn't read cache version"
-        | Some v -> Ok v
-
-  let save_current_version plugin_path =
-    OS.File.write_lines (version_file plugin_path)
-      [ string_of_int current_version ]
 
   let wipe_plugin_data plugin_path = OS.Dir.delete ~recurse:true plugin_path
 
@@ -114,11 +119,15 @@ module Migrate = struct
       flexibility, should be done before doing anything with the repository. *)
   let migrate plugin_path =
     let* version = read_version plugin_path in
-    if version = current_version then Ok ()
-    else if version > current_version then Error `Future_version
-    else
-      let* () = migrate_data plugin_path version in
-      save_current_version plugin_path
+    match version with
+    | None -> Ok () (* No migration to do *)
+    | Some version ->
+        Logs.debug (fun m ->
+            m "Current cache is at version %d and current version is %d" version
+              current_version);
+        if version = current_version then Ok ()
+        else if version > current_version then Error `Future_version
+        else migrate_data plugin_path version
 
   (** Don't let an error disturb the workflow, wipe the cache. *)
   let migrate plugin_path =
@@ -145,7 +154,9 @@ let load opam_opts ~pinned =
   let init_with_migration ~name plugin_path =
     let global_binary_repo_path = plugin_path / "cache" in
     let* () = Migrate.migrate plugin_path in
-    Binary_repo.init ~name global_binary_repo_path
+    let repo = Binary_repo.init ~name global_binary_repo_path in
+    let* () = Versioning.save_current_version plugin_path in
+    repo
   in
   let plugin_path =
     opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform"
