@@ -50,17 +50,16 @@ module Communication = struct
               Fmt.(list ~sep:(any ", ") string)
               tools_not_installed)
 
-  let conclusion_installing = function
-    | [] -> Logs.app (fun m -> m "  -> Nothing to install.")
-    | tools_to_install ->
-        Logs.app (fun m ->
-            m "  -> The following %a now installed: %a."
-              (list_plural "tool is" "tools are")
-              tools_to_install
-              Fmt.(list ~sep:(any ", ") string)
-              (List.map fst tools_to_install))
+  let conclusion_installing tools_to_install =
+    Logs.app (fun m ->
+        m "  -> The following %a now installed: %a."
+          (list_plural "tool is" "tools are")
+          tools_to_install
+          Fmt.(list ~sep:(any ", ") string)
+          (List.map fst tools_to_install))
 
   let enter_install_stage () = Logs.app (fun m -> m "* Installing tools...")
+  let nothing_to_install () = Logs.app (fun m -> m "* Nothing to install.")
 
   let tell_version_result tool r ocaml_version =
     match r with
@@ -270,17 +269,21 @@ let install opam_opts tools =
             (List.mapi (fun i s -> (i, s)) tools_to_build))))
   else Ok ([], []))
   >>= fun (tools_built, tools_failed) ->
-  (Communication.enter_install_stage ();
-   let tools_to_install = tools_in_cache @ tools_built in
-   let* () =
-     let* () = Cache.enable_repos opam_opts cache in
-     Opam.install
-       { opam_opts with log_height = Some 10 }
-       (List.map snd tools_to_install)
-   in
-   Communication.conclusion_installing tools_to_install;
-   Ok tools_failed)
-  >>= fun tools_failed ->
+  (match tools_in_cache @ tools_built with
+  | [] ->
+      Communication.nothing_to_install ();
+      Ok ()
+  | tools_to_install ->
+      Communication.enter_install_stage ();
+      let* () =
+        let* () = Cache.enable_repos opam_opts cache in
+        Opam.install
+          { opam_opts with log_height = Some 10 }
+          (List.map snd tools_to_install)
+      in
+      Communication.conclusion_installing tools_to_install;
+      Ok ())
+  >>= fun () ->
   Communication.conclusion tools_non_installable tools_failed;
   if tools_failed <> [] then Error (`Multi (List.map snd tools_failed))
   else Ok ()
