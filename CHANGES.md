@@ -2,7 +2,7 @@
 
 ## unreleased
 
-
+- Fix messages when there's nothing to install (#142)
 - Consider all tools as pure binaries packages (#134)
 - Keep cache repository enabled, for normal and pinned compilers. (#140)
 - Fix cached compiler package potentially being out of date. (#136)
