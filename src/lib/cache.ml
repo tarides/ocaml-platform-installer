@@ -28,7 +28,11 @@ module Versioning = struct
       else
         let* vcontent = OS.File.read_lines version_file in
         match parse_version vcontent with
-        | None -> Result.errorf "Couldn't read cache version"
+        | None ->
+            Result.errorf
+              "Couldn't read cache version. Consider wiping the cache by \
+               removing the directory '%a'."
+              Fpath.pp plugin_path
         | Some v -> Ok (Some v)
 end
 
@@ -116,32 +120,45 @@ module Migrate = struct
 
   (** Store a version number inside the repo directory to allow migrating the
       layout and clear obsolete packages. Operate on the files directory for
-      flexibility, should be done before doing anything with the repository. *)
-  let migrate plugin_path =
+      flexibility. Also init the binary repo to make sure the version file is
+      updated and that nothing is done with the repo before any migration. *)
+  let init_repo_with_migration ~name plugin_path =
+    let init_repo () =
+      let global_binary_repo_path = plugin_path / "cache" in
+      Binary_repo.init ~name global_binary_repo_path
+    in
     let* version = read_version plugin_path in
     match version with
-    | None -> Ok () (* No migration to do *)
+    | None ->
+        (* No migration to do. Init the repo before saving the version, to not
+           interfere the initialisation steps. *)
+        let* repo = init_repo () in
+        let* () = save_current_version plugin_path in
+        Ok repo
     | Some version ->
-        Logs.debug (fun m ->
-            m "Current cache is at version %d and current version is %d" version
-              current_version);
-        if version = current_version then Ok ()
-        else if version > current_version then Error `Future_version
-        else migrate_data plugin_path version
-
-  (** Don't let an error disturb the workflow, wipe the cache. *)
-  let migrate plugin_path =
-    match migrate plugin_path with
-    | Ok () as ok -> ok
-    | Error `Future_version ->
-        Result.errorf
-          "ocaml-platform was downgraded. Please either install a newer \
-           version or remove the directory '%a'."
-          Fpath.pp plugin_path
-    | Error (`Msg msg) ->
-        Logs.warn (fun f ->
-            f "Deleting the cache due to a migration error (%s)" msg);
-        wipe_plugin_data plugin_path
+        if version = current_version then init_repo ()
+        else if version > current_version then
+          Result.errorf
+            "ocaml-platform was downgraded. Please either install a newer \
+             version or remove the directory '%a'."
+            Fpath.pp plugin_path
+        else
+          (* Might wipe the repository in case of a problem. Init the repo
+             afterward. *)
+          let* () =
+            Logs.debug (fun m ->
+                m "Current cache is at version %d and current version is %d"
+                  version current_version);
+            match migrate_data plugin_path version with
+            | Ok () as ok -> ok
+            | Error (`Msg msg) ->
+                (* Don't let an error disturb the workflow, wipe the cache. *)
+                Logs.warn (fun f ->
+                    f "Deleting the cache due to a migration error (%s)" msg);
+                wipe_plugin_data plugin_path
+          in
+          let* () = save_current_version plugin_path in
+          init_repo ()
 end
 
 type t = {
@@ -151,17 +168,12 @@ type t = {
 }
 
 let load opam_opts ~pinned =
-  let init_with_migration ~name plugin_path =
-    let global_binary_repo_path = plugin_path / "cache" in
-    let* () = Migrate.migrate plugin_path in
-    let repo = Binary_repo.init ~name global_binary_repo_path in
-    let* () = Versioning.save_current_version plugin_path in
-    repo
-  in
   let plugin_path =
     opam_opts.Opam.GlobalOpts.root / "plugins" / "ocaml-platform"
   in
-  let* global_repo = init_with_migration ~name:"platform-cache" plugin_path in
+  let* global_repo =
+    Migrate.init_repo_with_migration ~name:"platform-cache" plugin_path
+  in
   if pinned then (
     (* Pinned compiler: don't actually cache the result by using a local
        repository. *)
@@ -172,7 +184,7 @@ let load opam_opts ~pinned =
     in
     let hash = Hashtbl.hash switch_path in
     let name = Printf.sprintf "ocaml-platform-pinned-cache-%d" hash in
-    let+ push_repo = init_with_migration ~name switch_path in
+    let+ push_repo = Migrate.init_repo_with_migration ~name switch_path in
     { global_repo; push_repo = Some push_repo })
   else
     (* Otherwise, use the global cache. *)
