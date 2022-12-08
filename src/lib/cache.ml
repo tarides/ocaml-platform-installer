@@ -99,10 +99,16 @@ module Migrate_0_to_1 : Migrater = struct
   let migrate_archive archive =
     modify_name (migrate_suffix ~suffix:".tar.gz") archive
 
+  (** Compiler packages are now generated on the fly. Remove unused repo. *)
+  let remove_sandbox_compiler_packages plugin_path =
+    let repo_path = plugin_path / "platform_sandbox_compiler_packages" in
+    OS.Dir.delete ~recurse:true repo_path
+
   (** Migrate all packages and archives. *)
   let migrate plugin_path =
     let packages_path = plugin_path / "cache" / "repo" / "packages" in
     let* () = iter_subdir migrate_package packages_path in
+    let* () = remove_sandbox_compiler_packages plugin_path in
     let archive_path = plugin_path / "cache" / "archives" in
     iter_subdir migrate_archive archive_path
 end
