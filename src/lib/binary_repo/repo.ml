@@ -6,19 +6,17 @@ type t = { name : string; path : Fpath.t }
 let opam_version = "2.0"
 let name t = t.name
 let path t = t.path
+let repo_file path = Fpath.( / ) path "repo"
 
 let init_repo path =
   OS.Dir.create path >>= fun _ ->
   OS.Dir.create (Fpath.add_seg path "packages") >>= fun _ ->
-  OS.File.writef
-    (Fpath.add_seg path "repo")
-    {|
+  OS.File.writef (repo_file path) {|
     opam-version: "%s"
-  |}
-    opam_version
+  |} opam_version
 
 let init ~name path =
-  OS.Dir.exists path >>= fun initialized ->
+  OS.Dir.exists (repo_file path) >>= fun initialized ->
   let repo = { name; path } in
   if initialized then Ok repo else init_repo path >>= fun _ -> Ok repo
 
