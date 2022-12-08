@@ -50,7 +50,10 @@ set -euo pipefail
 #   https://archive.ph/xvQVA
 _() {
 
-PREFIX=\${PREFIX:-/usr/local}
+DEFAULT_PREFIX=/usr
+if [[ -d /usr/local ]]; then DEFAULT_PREFIX=/usr/local; fi
+
+PREFIX=\${PREFIX:-\$DEFAULT_PREFIX}
 
 targetarch=\$(uname -m || echo unknown)
 # Taken from Opam's installer

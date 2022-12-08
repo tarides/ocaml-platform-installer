@@ -2,6 +2,8 @@
 
 ## unreleased
 
+- Installer: Avoid installing into /usr/local if it doesn't exist. (#144)
+  Install into /usr as a fallback.
 - Add a versionning and migration mechanism for the cache. (#137)
 - Fix messages when there's nothing to install (#142)
 - Consider all tools as pure binaries packages (#134)
