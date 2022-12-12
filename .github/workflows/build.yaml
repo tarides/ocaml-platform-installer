@@ -26,7 +26,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Needed to fetch tags
+
+      # The latest tag is needed to build the release tarball but
+      # actions/checkout fails to fetch it properly.
+      # https://github.com/actions/checkout/issues/882
+      - name: Fetch tags
+        run: git fetch --tags --force origin
 
       - name: Set up QEMU
         id: qemu
@@ -136,7 +144,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # See the same step in the linux build
+      - name: Fetch tags
+        run: git fetch --tags --force origin
 
       - name: Use OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v2
@@ -170,7 +184,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Download build artifacts
         uses: actions/download-artifact@v3
