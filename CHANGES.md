@@ -2,6 +2,7 @@
 
 ## unreleased
 
+- Fix `share/` folder not being fully installed for some tools (#151)
 - Fix sandbox creation failing as soon as a sandbox repo is left activated.
   (#150)
 

@@ -12,7 +12,7 @@ module Binary_install_file = struct
         (v "bin", "bin");
         (v "sbin", "sbin");
         (v "share" / pkg_name, "share");
-        (v "share_root", "share_root");
+        (v "share", "share_root");
         (v "doc" / pkg_name, "doc");
         (v "etc" / pkg_name, "etc");
         (v "man", "man");
