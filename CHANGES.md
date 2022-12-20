@@ -2,6 +2,9 @@
 
 ## unreleased
 
+- Fix sandbox creation failing as soon as a sandbox repo is left activated.
+  (#150)
+
 ## 0.7.0 (2022-12-12)
 
 - Installer: Avoid installing into /usr/local if it doesn't exist. (#144)
