@@ -6,7 +6,7 @@ open Result.Syntax
 let ( / ) = Fpath.( / )
 
 module Versioning = struct
-  let current_version = 1
+  let current_version = 2
   let version_file plugin_path = plugin_path / "ocaml-platform-version"
 
   let save_current_version plugin_path =
@@ -113,12 +113,59 @@ module Migrate_0_to_1 : Migrater = struct
     iter_subdir migrate_archive archive_path
 end
 
+module Migrate_1_to_2 : Migrater = struct
+  (** In earlier versions of [ocaml-platform], files that should be installed
+      directly in the [share] folder were not installed. See
+      {:https://github.com/tarides/ocaml-platform-installer/issues/148} *)
+
+  (** Constants *)
+
+  (** Tools impacted by the bug are removed. *)
+  let tools_to_remove = [ "ocamlformat"; "merlin"; "dune" ]
+
+  (** Helpers *)
+
+  let iter_subdir f dir =
+    let* subdirs = OS.Dir.contents dir in
+    List.fold_left
+      (fun acc subdir ->
+        let* () = acc in
+        f subdir)
+      (Ok ()) subdirs
+
+  let remove_if_needed condition path =
+    let name = Fpath.basename path in
+    if List.exists (condition name) tools_to_remove then
+      Bos.OS.Cmd.run Cmd.(v "rm" % "-r" % p path)
+    else Ok ()
+
+  (** Migraters *)
+
+  let migrate_package = remove_if_needed String.equal
+
+  let migrate_archive =
+    (* [dune-release] starts as [dune] but should not be removed, so we add a
+       [.] to ensure the name of the package is finished. *)
+    remove_if_needed (fun name pkg ->
+        Astring.String.is_prefix ~affix:(pkg ^ ".") name)
+
+  (** Migrate all packages and archives. *)
+  let migrate plugin_path =
+    let packages_path = plugin_path / "cache" / "repo" / "packages" in
+    let* () = iter_subdir migrate_package packages_path in
+    let archive_path = plugin_path / "cache" / "archives" in
+    iter_subdir migrate_archive archive_path
+end
+
 module Migrate = struct
   open Versioning
 
   let rec migrate_data plugin_path v =
     let* () =
-      match v with 0 -> Migrate_0_to_1.migrate plugin_path | _ -> Ok ()
+      match v with
+      | 0 -> Migrate_0_to_1.migrate plugin_path
+      | 1 -> Migrate_1_to_2.migrate plugin_path
+      | _ -> Ok ()
     in
     if v + 1 >= current_version then Ok () else migrate_data plugin_path (v + 1)
 
