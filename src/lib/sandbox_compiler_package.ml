@@ -82,6 +82,9 @@ let init_pkg_ocaml_system repo ~ocaml_version =
 let with_sandbox_compiler_repo opam_opts ocaml_version f =
   let ocaml_version = remove_alpha_plus_suffix ocaml_version in
   with_tmp_dir "compiler-package" @@ fun repo_path ->
+  (* Each repository used for a sandbox’s compiler must be uniquely named:
+     Otherwise, parallel execution would fail due to [opam] complaining that a
+     different repository with a similar name exists *)
   let hash = Hashtbl.hash repo_path in
   let name = Printf.sprintf "platform_sandbox_compiler_packages-%d" hash in
   let* repo = Repo.init ~name repo_path in

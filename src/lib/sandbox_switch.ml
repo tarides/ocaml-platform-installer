@@ -90,7 +90,9 @@ let with_sandbox_switch opam_opts ~ocaml_version f =
   let* sandbox_opts =
     make_sandbox_opts opam_opts ~compiler_path ~sandbox_root
   in
-  (* Patched compiler package description. *)
+  (* A patched compiler package description is needed. We install it from a
+     temporary repository which is removed as soon as the compiler is
+     installed. *)
   let* () =
     Sandbox_compiler_package.with_sandbox_compiler_repo sandbox_opts
       ocaml_version
