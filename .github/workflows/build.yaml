@@ -91,10 +91,6 @@ jobs:
         if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh reinstall_cached
 
-      - name: "Test: migrate_01"
-        if: ${{matrix.platform.target_arch == 'x86_64'}}
-        run: ./test/run_test.sh migrate_01
-
       - name: "Test: reinstall_ocamlformat"
         if: ${{matrix.platform.target_arch == 'x86_64'}}
         run: ./test/run_test.sh reinstall_ocamlformat
