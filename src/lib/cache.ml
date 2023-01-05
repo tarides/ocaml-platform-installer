@@ -118,11 +118,6 @@ module Migrate_1_to_2 : Migrater = struct
       directly in the [share] folder were not installed. See
       {:https://github.com/tarides/ocaml-platform-installer/issues/148} *)
 
-  (** Constants *)
-
-  (** Tools impacted by the bug are removed. *)
-  let tools_to_remove = [ "ocamlformat"; "merlin"; "dune" ]
-
   (** Helpers *)
 
   let iter_subdir f dir =
@@ -133,21 +128,25 @@ module Migrate_1_to_2 : Migrater = struct
         f subdir)
       (Ok ()) subdirs
 
-  let remove_if_needed condition path =
-    let name = Fpath.basename path in
-    if List.exists (condition name) tools_to_remove then
-      Bos.OS.Cmd.run Cmd.(v "rm" % "-r" % p path)
+  let remove_if condition path =
+    if condition (Fpath.basename path) then OS.Dir.delete ~recurse:true path
     else Ok ()
 
   (** Migraters *)
 
-  let migrate_package = remove_if_needed String.equal
+  (** Tools impacted by the bug are removed. *)
+  let tools_to_remove = [ "ocamlformat"; "merlin"; "dune" ]
+
+  let migrate_package =
+    remove_if (fun name -> List.exists (String.equal name) tools_to_remove)
 
   let migrate_archive =
     (* [dune-release] starts as [dune] but should not be removed, so we add a
        [.] to ensure the name of the package is finished. *)
-    remove_if_needed (fun name pkg ->
-        Astring.String.is_prefix ~affix:(pkg ^ ".") name)
+    remove_if (fun name ->
+        List.exists
+          (fun pkg -> Astring.String.is_prefix ~affix:(pkg ^ ".") name)
+          tools_to_remove)
 
   (** Migrate all packages and archives. *)
   let migrate plugin_path =
