@@ -128,9 +128,11 @@ module Migrate_1_to_2 : Migrater = struct
         f subdir)
       (Ok ()) subdirs
 
-  let remove_if condition path =
-    if condition (Fpath.basename path) then OS.Dir.delete ~recurse:true path
-    else Ok ()
+  let remove_if condition path ~is_dir =
+    let delete =
+      if is_dir then OS.Dir.delete ~recurse:true else OS.File.delete
+    in
+    if condition (Fpath.basename path) then delete path else Ok ()
 
   (** Migraters *)
 
@@ -138,15 +140,19 @@ module Migrate_1_to_2 : Migrater = struct
   let tools_to_remove = [ "ocamlformat"; "merlin"; "dune" ]
 
   let migrate_package =
-    remove_if (fun name -> List.exists (String.equal name) tools_to_remove)
+    remove_if
+      (fun name -> List.exists (String.equal name) tools_to_remove)
+      ~is_dir:true
 
   let migrate_archive =
     (* [dune-release] starts as [dune] but should not be removed, so we add a
        [.] to ensure the name of the package is finished. *)
-    remove_if (fun name ->
+    remove_if
+      (fun name ->
         List.exists
           (fun pkg -> Astring.String.is_prefix ~affix:(pkg ^ ".") name)
           tools_to_remove)
+      ~is_dir:false
 
   (** Migrate all packages and archives. *)
   let migrate plugin_path =
