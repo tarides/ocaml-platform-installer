@@ -181,20 +181,23 @@ module Migrate = struct
       flexibility. Also init the binary repo to make sure the version file is
       updated and that nothing is done with the repo before any migration. *)
   let init_repo_with_migration ~name plugin_path =
-    let init_repo () =
+    let init_repo ~save_version () =
+      Logs.app (fun m -> m "Initting repo");
       let global_binary_repo_path = plugin_path / "cache" in
-      Binary_repo.init ~name global_binary_repo_path
+      let* repo = Binary_repo.init ~name global_binary_repo_path in
+      let* () =
+        if save_version then save_current_version plugin_path else Ok ()
+      in
+      Ok repo
     in
     let* version = read_version plugin_path in
     match version with
     | None ->
         (* No migration to do. Init the repo before saving the version, to not
            interfere the initialisation steps. *)
-        let* repo = init_repo () in
-        let* () = save_current_version plugin_path in
-        Ok repo
+        init_repo ~save_version:true ()
     | Some version ->
-        if version = current_version then init_repo ()
+        if version = current_version then init_repo ~save_version:false ()
         else if version > current_version then
           Result.errorf
             "ocaml-platform was downgraded. Please either install a newer \
@@ -215,8 +218,7 @@ module Migrate = struct
                     f "Deleting the cache due to a migration error (%s)" msg);
                 wipe_plugin_data plugin_path
           in
-          let* () = save_current_version plugin_path in
-          init_repo ()
+          init_repo ~save_version:true ()
 end
 
 type t = {
