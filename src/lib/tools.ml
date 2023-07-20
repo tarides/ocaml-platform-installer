@@ -251,23 +251,24 @@ let install opam_opts tools =
       ([], [], []) tools
   in
   (if tools_to_build <> [] then (
-   Communication.enter_building_stage ();
-   Communication.enter_creating_sandbox ();
-   Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version (fun sandbox ->
-       let n = List.length tools_to_build in
-       Ok
-         (List.fold_left
-            (fun (tools_built, tools_failed)
-                 (i, ((tool_name, tool_version), build)) ->
-              Communication.building_tool tool_name i n;
-              match build sandbox with
-              | Ok () -> ((tool_name, tool_version) :: tools_built, tools_failed)
-              | Error e ->
-                  Communication.error_in_build tool_name;
-                  (tools_built, (tool_name, e) :: tools_failed))
-            ([], [])
-            (List.mapi (fun i s -> (i, s)) tools_to_build))))
-  else Ok ([], []))
+     Communication.enter_building_stage ();
+     Communication.enter_creating_sandbox ();
+     Sandbox_switch.with_sandbox_switch opam_opts ~ocaml_version (fun sandbox ->
+         let n = List.length tools_to_build in
+         Ok
+           (List.fold_left
+              (fun (tools_built, tools_failed)
+                   (i, ((tool_name, tool_version), build)) ->
+                Communication.building_tool tool_name i n;
+                match build sandbox with
+                | Ok () ->
+                    ((tool_name, tool_version) :: tools_built, tools_failed)
+                | Error e ->
+                    Communication.error_in_build tool_name;
+                    (tools_built, (tool_name, e) :: tools_failed))
+              ([], [])
+              (List.mapi (fun i s -> (i, s)) tools_to_build))))
+   else Ok ([], []))
   >>= fun (tools_built, tools_failed) ->
   (match tools_in_cache @ tools_built with
   | [] ->
